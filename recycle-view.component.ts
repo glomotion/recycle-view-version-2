@@ -56,6 +56,7 @@ export class RecycleView extends LitElement {
         background-color: #f5f5f5;
         color: grey;
         margin: 10px;
+        padding: 10px;
         text-align: center;
       }
 
@@ -65,7 +66,8 @@ export class RecycleView extends LitElement {
 
       .list__tile__img {
         display: block;
-        margin: 5px auto;
+        margin: 0 auto;
+        height: 200px;
       }
     `;
   }
@@ -218,6 +220,7 @@ export class RecycleView extends LitElement {
   render() {
     const { collection } = this;
     const moo = new Array(this.listSize).fill({});
+    console.log('!!!!! RENDERING !!!!!');
 
     return html`
       <div class='list'>
