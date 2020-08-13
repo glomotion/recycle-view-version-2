@@ -78,10 +78,10 @@ export class RecycleView extends LitElement {
 
   private topSentinelPreviousY = 0;
   private bottomSentinelPreviousY = 0;
-  private listSize = 20;
-  private collectionSize = 200;
+  private listSize = 0;
+  private collectionSize = 100;
   private collection = [];
-  private currentIndex = 0;
+  private currentFirstIndex = 0;
   private observer: any;
   private paddingTop = 0;
   private paddingBottom = 0;
@@ -134,9 +134,9 @@ export class RecycleView extends LitElement {
     let firstIndex;
     
     if (scrollingDownwards) {
-      firstIndex = this.currentIndex + increment;
+      firstIndex = this.currentFirstIndex + increment;
     } else {
-      firstIndex = this.currentIndex - increment;
+      firstIndex = this.currentFirstIndex - increment;
     }
     
     if (firstIndex < 0) {
@@ -149,8 +149,7 @@ export class RecycleView extends LitElement {
   private topSentryCallback(entry) {
 
     // Stop users from going off the page (in terms of the results set total)
-    if (this.currentIndex === 0) {
-      const container = this.shadowRoot.querySelector('.list') as HTMLElement;
+    if (this.currentFirstIndex === 0) {
       this.style.setProperty('--paddingBottom', '0px');
       this.style.setProperty('--paddingTop', '0px');
       return false;
@@ -158,17 +157,23 @@ export class RecycleView extends LitElement {
 
     const currentY = entry.boundingClientRect.top;
     const isIntersecting = entry.isIntersecting;
+    const shouldChangePage = currentY > this.topSentinelPreviousY &&
+      isIntersecting;
+
+    console.log(`topSentryCallback(entry)
+    ---------------------------------------------
+      currentY: ${currentY},
+      this.topSentinelPreviousY: ${this.topSentinelPreviousY},
+      isIntersecting: ${isIntersecting},
+      DO THE THING: ${shouldChangePage},
+    `, entry.boundingClientRect);
 
     // check if user is actually Scrolling up
-    if (
-      currentY > this.topSentinelPreviousY &&
-      isIntersecting &&
-      this.currentIndex !== 0
-    ) {
+    if (shouldChangePage) {
       const firstIndex = this.getCurrentWindowFirstIndex(false);
       this.updatePadding(false);
       this.recycleDom(firstIndex);
-      this.currentIndex = firstIndex;
+      this.currentFirstIndex = firstIndex;
     }
 
     // Store current offset, for the next time:
@@ -178,22 +183,21 @@ export class RecycleView extends LitElement {
   private bottomSentryCallback(entry) {
 
     // Stop users from going off the page (in terms of the results set total)
-    if (this.currentIndex === this.collectionSize - this.listSize) {
+    if (this.currentFirstIndex === this.collectionSize - this.listSize) {
       return false;
     }
 
     const currentY = entry.boundingClientRect.top;
     const isIntersecting = entry.isIntersecting;
+    const shouldChangePage = currentY < this.bottomSentinelPreviousY &&
+      isIntersecting;
 
     // check if user is actually Scrolling down
-    if (
-      currentY < this.bottomSentinelPreviousY &&
-      isIntersecting
-    ) {
+    if (shouldChangePage) {
       const firstIndex = this.getCurrentWindowFirstIndex(true);
       this.updatePadding(true);
       this.recycleDom(firstIndex);
-      this.currentIndex = firstIndex;
+      this.currentFirstIndex = firstIndex;
     }
 
     // Store current offset, for the next time:
@@ -212,7 +216,9 @@ export class RecycleView extends LitElement {
       });
     }
 
-    this.observer = new IntersectionObserver(handleIntersection, {});
+    this.observer = new IntersectionObserver(handleIntersection, {
+      root: this,
+    });
     this.observer.observe(this.shadowRoot.querySelector(".list__tile--0"));
     this.observer.observe(this.shadowRoot.querySelector(`.list__tile--${this.listSize - 1}`));
   }
