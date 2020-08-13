@@ -157,15 +157,7 @@ export class RecycleView extends LitElement {
     const currentY = entry.boundingClientRect.top;
     const isIntersecting = entry.isIntersecting;
     const shouldChangePage = currentY > this.topSentinelPreviousY &&
-      isIntersecting;
-
-    console.log(`topSentryCallback(entry)
-    ---------------------------------------------
-      currentY: ${currentY},
-      this.topSentinelPreviousY: ${this.topSentinelPreviousY},
-      isIntersecting: ${isIntersecting},
-      DO THE THING: ${shouldChangePage},
-    `, entry.boundingClientRect);
+      isIntersecting && this.currentFirstIndex !== 0;
 
     // check if user is actually Scrolling up
     if (shouldChangePage) {
