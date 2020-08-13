@@ -6,19 +6,13 @@ export class App extends LitElement {
       :host {
         width: 100%;
         height: 100%;
+        display: flex;
       }
 
-      .list {
-        overflow: scroll;
-        list-style-type: none;
-        padding: 0;
-      }
-
-      .tile {
-        background-color: grey;
-        margin: 10px 0;
-        height: 150px;
-        width: 100%;
+      gu-recycle-view {
+        width: 80%;
+        height: 80%;
+        margin: auto;
       }
     `;
   }
@@ -29,18 +23,13 @@ export class App extends LitElement {
 
   /* LIT ELEMENT COMPONENT LIFE CYCLE EVENTS:
   ----------------------------------------------------------------------- */
-  firstUpdated() {
+  protected firstUpdated() {
 
   } 
 
-
-  private init() {
-
-  }
-
-  render() {
+  protected render() {
     return html`
-     
+      <gu-recycle-view></gu-recycle-view>
     `;
   }
 }
