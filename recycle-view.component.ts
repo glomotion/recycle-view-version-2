@@ -81,6 +81,8 @@ export class RecycleView extends LitElement {
   private collection = [];
   private currentIndex = 0;
   private observer: any;
+  private paddingTop = 0;
+  private paddingBottom = 0;
 
   /* LIT ELEMENT COMPONENT LIFE CYCLE EVENTS:
   ----------------------------------------------------------------------- */
@@ -111,23 +113,18 @@ export class RecycleView extends LitElement {
 
   private updatePadding(scrollingDownwards = true) {
     const container = this.shadowRoot.querySelector('.list') as HTMLElement;
-    const currentPaddingTop = getNumberFromStyle(this.style.paddingTop);
-    const currentPaddingBottom = getNumberFromStyle(this.style.paddingBottom);
     const firstItem = container.querySelector('.list__tile');
     const removePaddingValue = getOuterHeight(firstItem) * (this.listSize / 2);
-    console.log('!!!!!!!!!!!', firstItem, removePaddingValue);
 
     if (scrollingDownwards) {
-      this.style.setProperty('--paddingTop', `${currentPaddingTop + removePaddingValue}px`);
-      // container.style.paddingTop = `${currentPaddingTop + removePaddingValue}px`;
-      this.style.setProperty('--paddingBottom', currentPaddingBottom === 0 ? '0px' : `${currentPaddingBottom - removePaddingValue}px`);
-      // container.style.paddingBottom = currentPaddingBottom === 0 ? '0px' : `${currentPaddingBottom - removePaddingValue}px`;
+      this.paddingTop += removePaddingValue;
+      this.paddingBottom = this.paddingBottom === 0 ? 0 : this.paddingBottom - removePaddingValue;
     } else {
-      this.style.setProperty('--paddingBottom', `${currentPaddingBottom + removePaddingValue}px`);
-      // container.style.paddingBottom = `${currentPaddingBottom + removePaddingValue}px`;
-      // container.style.paddingTop = currentPaddingTop === 0 ? '0px' : `${currentPaddingTop - removePaddingValue}px`;
-      this.style.setProperty('--paddingTop', currentPaddingTop === 0 ? '0px' : `${currentPaddingTop - removePaddingValue}px`);
+      this.paddingTop = this.paddingTop === 0 ? 0 : this.paddingTop - removePaddingValue;
+      this.paddingBottom += removePaddingValue;
     }
+    this.style.setProperty('--paddingTop', `${this.paddingTop}px`);
+    this.style.setProperty('--paddingBottom', `${this.paddingBottom}px`);
   }
 
   private getCurrentWindowFirstIndex(scrollingDownwards = true) {
@@ -152,8 +149,8 @@ export class RecycleView extends LitElement {
     // Stop users from going off the page (in terms of the results set total)
     if (this.currentIndex === 0) {
       const container = this.shadowRoot.querySelector('.list') as HTMLElement;
-      container.style.paddingTop = '0px';
-      container.style.paddingBottom = '0px';
+      this.style.setProperty('--paddingBottom', '0px');
+      this.style.setProperty('--paddingTop', '0px');
       return false;
     }
 
