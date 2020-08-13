@@ -1,0 +1,10 @@
+{
+  "name": "typescript",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "lit-element": "2.3.1",
+    "requestidlecallback-polyfill": "^1.0.2",
+    "stats.js": "0.17.0"
+  }
+}
