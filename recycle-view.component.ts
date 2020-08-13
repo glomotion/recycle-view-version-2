@@ -40,19 +40,32 @@ export class RecycleView extends LitElement {
       :host {
         width: 100%;
         height: 100%;
+        overflow: auto;
+        font-family: Lato;
       }
 
       .list {
-        overflow: scroll;
-        list-style-type: none;
-        padding: 0;
+        padding-top: var(--paddingTop);
+        padding-bottom: var(--paddingBottom);
+        margin: 0;
+        display: flex;
+        flex-direction: column;
       }
 
-      .tile {
-        background-color: grey;
-        margin: 10px 0;
-        height: 150px;
-        width: 100%;
+      .list__tile {
+        background-color: #f5f5f5;
+        color: grey;
+        margin: 10px;
+        text-align: center;
+      }
+
+      .list__tile__title {
+
+      }
+
+      .list__tile__img {
+        display: block;
+        margin: 5px auto;
       }
     `;
   }
@@ -87,9 +100,12 @@ export class RecycleView extends LitElement {
   ----------------------------------------------------------------------- */
   private recycleDom(firstIndex) {
     for (let i = 0; i < this.listSize; i++) {
-      const tile = this.shadowRoot.querySelector('.tile-' + i) as HTMLElement;
-      (tile.firstElementChild as HTMLElement).innerText = this.collection[i + firstIndex].title;
-      (tile.lastChild as HTMLElement).setAttribute('src', this.collection[i + firstIndex].imgSrc);
+      const tile = this.shadowRoot.querySelector('.list__tile--' + i) as HTMLElement;
+      const img = tile.querySelector('.list__tile__img');
+      const title = tile.querySelector('.list__tile__title');
+      const newItem = this.collection[i + firstIndex];
+      title.innerHTML = newItem.title;
+      img.setAttribute('src', newItem.imgSrc);
     }
   }
 
@@ -97,15 +113,20 @@ export class RecycleView extends LitElement {
     const container = this.shadowRoot.querySelector('.list') as HTMLElement;
     const currentPaddingTop = getNumberFromStyle(this.style.paddingTop);
     const currentPaddingBottom = getNumberFromStyle(this.style.paddingBottom);
-    const firstItem = container.querySelector('.tile:nth-child(1)');
+    const firstItem = container.querySelector('.list__tile');
     const removePaddingValue = getOuterHeight(firstItem) * (this.listSize / 2);
+    console.log('!!!!!!!!!!!', firstItem, removePaddingValue);
 
     if (scrollingDownwards) {
-      container.style.paddingTop = `${currentPaddingTop + removePaddingValue}px`;
-      container.style.paddingBottom = currentPaddingBottom === 0 ? '0px' : `${currentPaddingBottom - removePaddingValue}px`;
+      this.style.setProperty('--paddingTop', `${currentPaddingTop + removePaddingValue}px`);
+      // container.style.paddingTop = `${currentPaddingTop + removePaddingValue}px`;
+      this.style.setProperty('--paddingBottom', currentPaddingBottom === 0 ? '0px' : `${currentPaddingBottom - removePaddingValue}px`);
+      // container.style.paddingBottom = currentPaddingBottom === 0 ? '0px' : `${currentPaddingBottom - removePaddingValue}px`;
     } else {
-      container.style.paddingBottom = `${currentPaddingBottom + removePaddingValue}px`;
-      container.style.paddingTop = currentPaddingTop === 0 ? '0px' : `${currentPaddingTop - removePaddingValue}px`;
+      this.style.setProperty('--paddingBottom', `${currentPaddingBottom + removePaddingValue}px`);
+      // container.style.paddingBottom = `${currentPaddingBottom + removePaddingValue}px`;
+      // container.style.paddingTop = currentPaddingTop === 0 ? '0px' : `${currentPaddingTop - removePaddingValue}px`;
+      this.style.setProperty('--paddingTop', currentPaddingTop === 0 ? '0px' : `${currentPaddingTop - removePaddingValue}px`);
     }
   }
 
@@ -181,40 +202,36 @@ export class RecycleView extends LitElement {
   }
 
   private initIntersectionObserver() {
-    const options = {
-      /* root: document.querySelector(".cat-list") */
-    }
-
-    const callback = entries => {
+    const handleIntersection = entries => {
       entries.forEach(entry => {
-        if (entry.target.id === 'tile-0') {
+        const { target } = entry;
+        if (target.classList.contains('list__tile--0')) {
           this.topSentryCallback(entry);
-        } else if (entry.target.id === `tile-${this.listSize - 1}`) {
+        } else if (target.classList.contains(`list__tile--${this.listSize - 1}`)) {
           this.bottomSentryCallback(entry);
         }
       });
     }
 
-    this.observer = new IntersectionObserver(callback, options);
-    this.observer.observe(this.shadowRoot.querySelector("#tile-0"));
-    this.observer.observe(this.shadowRoot.querySelector(`#tile-${this.listSize - 1}`));
+    this.observer = new IntersectionObserver(handleIntersection, {});
+    this.observer.observe(this.shadowRoot.querySelector(".list__tile--0"));
+    this.observer.observe(this.shadowRoot.querySelector(`.list__tile--${this.listSize - 1}`));
   }
 
   render() {
     const { collection } = this;
+    const moo = new Array(this.listSize).fill({});
 
     return html`
-      <div 
-        class='list' 
-        style='top-padding: 0px; bottom-padding: 0px'
-      >
-        ${collection.map((tile) => {
+      <div class='list'>
+        ${moo.map((_, i) => {
+          const tile = collection[i];
           return html`
-            <div class="tile tile-${tile.catCounter}">
-              <div class="tile__name">${tile.title}</div>
-              <img src=${tile.imgSrc} alt="moo" />
+            <div class="list__tile list__tile--${i}">
+              <div class="list__tile__title">${tile.title} title text</div>
+              <img class="list__tile__img" src=${tile.imgSrc} alt="moo" />
             </div>
-          `;
+          `
         })}
       </div>
     `;
