@@ -152,7 +152,6 @@ export class RecycleView extends LitElement {
     if (this.currentFirstIndex === 0) {
       this.style.setProperty('--paddingBottom', '0px');
       this.style.setProperty('--paddingTop', '0px');
-      return false;
     }
 
     const currentY = entry.boundingClientRect.top;
