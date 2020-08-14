@@ -61,7 +61,7 @@ export class RecycleView extends LitElement {
 
       .sentinal {
         width: 100%;
-        height: 1px;
+        height: 0px;
       }
 
       .list__tile {
