@@ -65,7 +65,7 @@ export class RecycleView extends LitElement {
       }
 
       .list__tile {
-        width: calc(33.33% - 20px);
+        width: calc(25% - 20px);
         background-color: #f5f5f5;
         color: grey;
         margin: 10px;
@@ -80,7 +80,9 @@ export class RecycleView extends LitElement {
       .list__tile__img {
         display: block;
         margin: 0 auto;
+        width: 100%;
         height: 200px;
+        object-fit: cover;
       }
     `;
   }
@@ -104,7 +106,8 @@ export class RecycleView extends LitElement {
   constructor(props) {
     super();
     this.collectionSize = 80;
-    this.listSize = 18;
+    // this.listSize = 18; // 3 columns * 2 * 3
+    this.listSize = 24; // 4 columns * 2 * 3
     this.collection = initCollection(this.collectionSize);
   }
 
@@ -129,7 +132,7 @@ export class RecycleView extends LitElement {
   private updatePadding(scrollingDownwards = true) {
     const container = this.shadowRoot.querySelector('.list') as HTMLElement;
     const firstItem = container.querySelector('.list__tile');
-    const removePaddingValue = getOuterHeight(firstItem) * (this.listSize / 6) + 1;
+    const removePaddingValue = getOuterHeight(firstItem) * (this.listSize / 8) + 1;
 
     if (scrollingDownwards) {
       this.paddingTop += removePaddingValue;
@@ -143,7 +146,7 @@ export class RecycleView extends LitElement {
   }
 
   private getNewWindowFirstIndex(scrollingDownwards = true) {
-    const increment = this.listSize / 6;
+    const increment = this.listSize / 8;
     let firstIndex;
     
     if (scrollingDownwards) {
