@@ -94,7 +94,7 @@ export class RecycleView extends LitElement {
 
   static get properties() {
     return {
-      collection: { type: Array },
+      // collection: { type: Array },
       layoutMode: { type: String },
     };
   }
@@ -102,7 +102,7 @@ export class RecycleView extends LitElement {
   private topSentinelPreviousY = 0;
   private bottomSentinelPreviousY = 0;
   private listSize = 0;
-  private collection: [];
+  private collection: any[];
   private currentFirstIndex = 0;
   private observer: any;
   private paddingTop = 0;
@@ -134,8 +134,8 @@ export class RecycleView extends LitElement {
   ----------------------------------------------------------------------- */
   constructor(props) {
     super();
-    // this.collection = initCollection(55);
-    // this.listSize = 27;
+    this.collection = initCollection(55);
+    this.listSize = 27;
   }
 
   firstUpdated() {
@@ -153,24 +153,24 @@ export class RecycleView extends LitElement {
   ----------------------------------------------------------------------- */
 
   private recycleDom(firstIndex) {
-    for (let i = 0; i < this.listSize; i++) {
-      const newItem = this.collection[i + firstIndex];
-      const tile = this.shadowRoot.querySelector('.list__tile--' + i) as HTMLElement;
-      const img = tile.querySelector('.list__tile__img');
-      const title = tile.querySelector('.list__tile__title');
-      if (newItem) {
-        tile.setAttribute('data-current-tile-id', newItem.catCounter);
-        title.innerHTML = newItem.title;
-        tile.classList.remove('list__tile--empty');
-        img.setAttribute('src', newItem.imgSrc);
-      } else {
-        this.atListEnd = true;
-        tile.classList.add('list__tile--empty');
-        tile.removeAttribute('data-current-tile-id');
-        title.innerHTML = '';
-        img.setAttribute('src', '');
-      }
-    }
+    // for (let i = 0; i < this.listSize; i++) {
+    //   const newItem = this.collection[i + firstIndex];
+    //   const tile = this.shadowRoot.querySelector('.list__tile--' + i) as HTMLElement;
+    //   const img = tile.querySelector('.list__tile__img');
+    //   const title = tile.querySelector('.list__tile__title');
+    //   if (newItem) {
+    //     tile.setAttribute('data-current-tile-id', newItem.catCounter);
+    //     title.innerHTML = newItem.title;
+    //     tile.classList.remove('list__tile--empty');
+    //     img.setAttribute('src', newItem.imgSrc);
+    //   } else {
+    //     this.atListEnd = true;
+    //     tile.classList.add('list__tile--empty');
+    //     tile.removeAttribute('data-current-tile-id');
+    //     title.innerHTML = '';
+    //     img.setAttribute('src', '');
+    //   }
+    // }
   }
 
   private updatePadding(scrollingDownwards = true) {
@@ -278,7 +278,7 @@ export class RecycleView extends LitElement {
   render() {
     const { collection, listSize } = this;
     const moo = new Array(this.listSize).fill({});
-    console.log('!!!!! RENDERING !!!!!');
+    console.log('!!!!! RENDERING !!!!!', collection);
 
     return html`
       <div class='list'>
