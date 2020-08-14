@@ -27,7 +27,10 @@ export class App extends LitElement {
   }
 
   static get properties() {
-    return {};
+    return {
+      protos: { type: Array },
+      random: { type: String },
+    };
   }
 
   protos = [];
