@@ -37,6 +37,13 @@ const getNumberFromStyle = style => parseInt(style, 10);
 export class RecycleView extends LitElement {
   static get styles() {
     return css`
+      :host,
+      :host *,
+      :host *::before,
+      :host *::after {
+        box-sizing: border-box;
+      }
+
       :host {
         width: 100%;
         height: 100%;
@@ -49,10 +56,11 @@ export class RecycleView extends LitElement {
         padding-bottom: var(--paddingBottom);
         margin: 0;
         display: flex;
-        flex-direction: column;
+        flex-wrap: wrap;
       }
 
       .list__tile {
+        width: calc(50% - 20px);
         background-color: #f5f5f5;
         color: grey;
         margin: 10px;
@@ -91,7 +99,7 @@ export class RecycleView extends LitElement {
   constructor(props) {
     super();
     this.collectionSize = 80;
-    this.listSize = 10;
+    this.listSize = 16;
     this.collection = initCollection(this.collectionSize);
   }
 
@@ -116,7 +124,7 @@ export class RecycleView extends LitElement {
   private updatePadding(scrollingDownwards = true) {
     const container = this.shadowRoot.querySelector('.list') as HTMLElement;
     const firstItem = container.querySelector('.list__tile');
-    const removePaddingValue = getOuterHeight(firstItem) * (this.listSize / 2);
+    const removePaddingValue = getOuterHeight(firstItem) * (this.listSize / 4);
 
     if (scrollingDownwards) {
       this.paddingTop += removePaddingValue;
@@ -129,8 +137,8 @@ export class RecycleView extends LitElement {
     this.style.setProperty('--paddingBottom', `${this.paddingBottom}px`);
   }
 
-  private getCurrentWindowFirstIndex(scrollingDownwards = true) {
-    const increment = this.listSize / 2;
+  private getNewWindowFirstIndex(scrollingDownwards = true) {
+    const increment = this.listSize / 4;
     let firstIndex;
     
     if (scrollingDownwards) {
@@ -161,7 +169,7 @@ export class RecycleView extends LitElement {
 
     // check if user is actually Scrolling up
     if (shouldChangePage) {
-      const firstIndex = this.getCurrentWindowFirstIndex(false);
+      const firstIndex = this.getNewWindowFirstIndex(false);
       this.updatePadding(false);
       this.recycleDom(firstIndex);
       this.currentFirstIndex = firstIndex;
@@ -185,7 +193,7 @@ export class RecycleView extends LitElement {
 
     // check if user is actually Scrolling down
     if (shouldChangePage) {
-      const firstIndex = this.getCurrentWindowFirstIndex(true);
+      const firstIndex = this.getNewWindowFirstIndex(true);
       this.updatePadding(true);
       this.recycleDom(firstIndex);
       this.currentFirstIndex = firstIndex;
@@ -221,6 +229,7 @@ export class RecycleView extends LitElement {
 
     return html`
       <div class='list'>
+        <div class="topSentinal></div>
         ${moo.map((_, i) => {
           const tile = collection[i];
           return html`
@@ -230,6 +239,7 @@ export class RecycleView extends LitElement {
             </div>
           `
         })}
+        <div class="bottomSentinal></div>
       </div>
     `;
   }

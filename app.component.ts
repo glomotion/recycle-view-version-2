@@ -24,7 +24,7 @@ export class App extends LitElement {
       }
 
       gu-recycle-view {
-        width: 80%;
+        width: 100%;
         height: 80%;
         margin: auto;
       }
