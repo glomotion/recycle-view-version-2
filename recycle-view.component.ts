@@ -61,11 +61,11 @@ export class RecycleView extends LitElement {
 
       .sentinal {
         width: 100%;
-        height: 1px;
+        height: 2px;
       }
 
       .list__tile {
-        width: calc(33.33% - 20px);
+        width: calc(50% - 20px);
         background-color: #f5f5f5;
         color: grey;
         margin: 10px;
@@ -92,6 +92,7 @@ export class RecycleView extends LitElement {
         width: 100%;
         height: 200px;
         object-fit: cover;
+        opacity: 0;
       }
     `;
   }
@@ -109,22 +110,15 @@ export class RecycleView extends LitElement {
   private observer: any;
   private paddingTop = 0;
   private paddingBottom = 0;
+  private atListEnd = false;
 
   /* LIT ELEMENT COMPONENT LIFE CYCLE EVENTS:
   ----------------------------------------------------------------------- */
   constructor(props) {
     super();
-    this.collectionSize = 41;
+    this.collectionSize = 43;
     this.collection = initCollection(this.collectionSize);
-    this.listSize = 18; // 3 columns * 2 * 3
-    // this.listSize = 24; // 4 columns * 2 * 3
-    const remainderCells = this.collectionSize % this.listSize;
-    if (remainderCells !== 0) {
-      this.collection.push(
-        ...new Array(this.listSize - remainderCells).fill({ empty: true })
-      );
-      this.collectionSize = this.collection.length;
-    }
+    this.listSize = 20;
   }
 
   firstUpdated() {
@@ -134,20 +128,28 @@ export class RecycleView extends LitElement {
 
   /* PRIVATE METHODS:
   ----------------------------------------------------------------------- */
+  private get listIncrement() {
+    return 10;
+  }
+  private get paddingIncrement() {
+    return 5;
+  }
+
   private recycleDom(firstIndex) {
     for (let i = 0; i < this.listSize; i++) {
       const newItem = this.collection[i + firstIndex];
-      if (!newItem.empty) {
-        const tile = this.shadowRoot.querySelector('.list__tile--' + i) as HTMLElement;
-        tile.classList.remove('list__tile--empty');
-        const img = tile.querySelector('.list__tile__img');
-        const title = tile.querySelector('.list__tile__title');
+      const tile = this.shadowRoot.querySelector('.list__tile--' + i) as HTMLElement;
+      const img = tile.querySelector('.list__tile__img');
+      const title = tile.querySelector('.list__tile__title');
+      if (newItem) {
         tile.setAttribute('data-current-tile-id', newItem.catCounter);
         title.innerHTML = newItem.title;
         img.setAttribute('src', newItem.imgSrc);
       } else {
-        const tile = this.shadowRoot.querySelector('.list__tile--' + i) as HTMLElement;
-        tile.classList.add('list__tile--empty');
+        this.atListEnd = true;
+        tile.removeAttribute('data-current-tile-id');
+        title.innerHTML = '';
+        img.setAttribute('src', '');
       }
     }
   }
@@ -155,27 +157,26 @@ export class RecycleView extends LitElement {
   private updatePadding(scrollingDownwards = true) {
     const container = this.shadowRoot.querySelector('.list') as HTMLElement;
     const firstItem = container.querySelector('.list__tile');
-    const removePaddingValue = getOuterHeight(firstItem) * (this.listSize / 6) + 1;
+    const paddingOffset = getOuterHeight(firstItem) * (this.paddingIncrement);
 
     if (scrollingDownwards) {
-      this.paddingTop += removePaddingValue;
-      this.paddingBottom = this.paddingBottom === 0 ? 0 : this.paddingBottom - removePaddingValue;
+      this.paddingTop += paddingOffset;
+      this.paddingBottom = this.paddingBottom === 0 ? 0 : this.paddingBottom - paddingOffset;
     } else {
-      this.paddingTop = this.paddingTop === 0 ? 0 : this.paddingTop - removePaddingValue;
-      this.paddingBottom += removePaddingValue;
+      this.paddingTop = this.paddingTop === 0 ? 0 : this.paddingTop - paddingOffset;
+      this.paddingBottom += paddingOffset;
     }
     this.style.setProperty('--paddingTop', `${this.paddingTop}px`);
     this.style.setProperty('--paddingBottom', `${this.paddingBottom}px`);
   }
 
-  private getNewWindowFirstIndex(scrollingDownwards = true) {
-    const increment = this.listSize / 6;
+  private calculateNewFirstIndex(scrollingDownwards = true) {
     let firstIndex;
     
     if (scrollingDownwards) {
-      firstIndex = this.currentFirstIndex + increment;
+      firstIndex = this.currentFirstIndex + this.listIncrement;
     } else {
-      firstIndex = this.currentFirstIndex - increment;
+      firstIndex = this.currentFirstIndex - this.listIncrement;
     }
     
     if (firstIndex < 0) {
@@ -186,6 +187,7 @@ export class RecycleView extends LitElement {
   }
 
   private topSentryCallback(entry) {
+    this.atListEnd = false;
 
     // Stop users from going off the page (in terms of the results set total)
     if (this.currentFirstIndex === 0) {
@@ -200,11 +202,10 @@ export class RecycleView extends LitElement {
 
     // check if user is actually Scrolling up
     if (shouldChangePage) {
-      const firstIndex = this.getNewWindowFirstIndex(false);
+      const firstIndex = this.calculateNewFirstIndex(false);
       this.updatePadding(false);
       this.recycleDom(firstIndex);
       this.currentFirstIndex = firstIndex;
-      console.log('!!!!!!!!!!', firstIndex);
     }
 
     // Store current offset, for the next time:
@@ -212,9 +213,18 @@ export class RecycleView extends LitElement {
   }
 
   private bottomSentryCallback(entry) {
+    console.log('!!!!!!!!!', this.atListEnd);
 
     // Stop users from going off the page (in terms of the results set total)
-    if (this.currentFirstIndex === this.collectionSize - this.listSize) {
+    // if (this.calculateNewFirstIndex(true) + this.listIncrement > this.collectionSize) {
+    //   console.log('!!!!!!!!!! UNEVEN ENDING !!!!!!!!!!!!');
+    //   const firstIndex = this.collectionSize - this.listSize;
+    //   this.recycleDom(firstIndex);
+    //   this.currentFirstIndex = firstIndex;
+    //   return false;
+    // } else 
+    if (this.atListEnd || this.currentFirstIndex === this.collectionSize - this.listSize) {
+      console.log('@@@@@@@@@ DOWNWARDS: EVEN END @@@@@@@@@@@@');
       return false;
     }
 
@@ -225,11 +235,11 @@ export class RecycleView extends LitElement {
 
     // check if user is actually Scrolling down
     if (shouldChangePage) {
-      const firstIndex = this.getNewWindowFirstIndex(true);
+      const firstIndex = this.calculateNewFirstIndex(true);
       this.updatePadding(true);
       this.recycleDom(firstIndex);
       this.currentFirstIndex = firstIndex;
-      console.log('!!!!!!!!!!', firstIndex);
+      // console.log('!!!!!!!!!!', firstIndex);
     }
 
     // Store current offset, for the next time:
@@ -267,7 +277,7 @@ export class RecycleView extends LitElement {
           const tile = collection[i];
           return html`
             <div class="list__tile list__tile--${i}" data-current-tile-id=${tile.catCounter}>
-              <div class="list__tile__title">${tile.title} title text</div>
+              <div class="list__tile__title">${tile.title}</div>
               <img class="list__tile__img" src=${tile.imgSrc} alt="moo" />
             </div>
           `
