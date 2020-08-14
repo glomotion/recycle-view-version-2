@@ -207,9 +207,9 @@ export class RecycleView extends LitElement {
     const handleIntersection = entries => {
       entries.forEach(entry => {
         const { target } = entry;
-        if (target.classList.contains('list__tile--0')) {
+        if (target.classList.contains('topSentinal')) {
           this.topSentryCallback(entry);
-        } else if (target.classList.contains(`list__tile--${this.listSize - 1}`)) {
+        } else if (target.classList.contains('bottomSentinal')) {
           this.bottomSentryCallback(entry);
         }
       });
@@ -218,8 +218,8 @@ export class RecycleView extends LitElement {
     this.observer = new IntersectionObserver(handleIntersection, {
       root: this,
     });
-    this.observer.observe(this.shadowRoot.querySelector(".list__tile--0"));
-    this.observer.observe(this.shadowRoot.querySelector(`.list__tile--${this.listSize - 1}`));
+    this.observer.observe(this.shadowRoot.querySelector(".topSentinal"));
+    this.observer.observe(this.shadowRoot.querySelector(".bottomSentinal"));
   }
 
   render() {
