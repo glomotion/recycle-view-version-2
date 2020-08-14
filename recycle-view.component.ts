@@ -59,6 +59,11 @@ export class RecycleView extends LitElement {
         flex-wrap: wrap;
       }
 
+      .sentinal {
+        width: 100%;
+        height: 1px;
+      }
+
       .list__tile {
         width: calc(50% - 20px);
         background-color: #f5f5f5;
@@ -229,7 +234,7 @@ export class RecycleView extends LitElement {
 
     return html`
       <div class='list'>
-        <div class="topSentinal></div>
+        <div class="sentinal topSentinal"></div>
         ${moo.map((_, i) => {
           const tile = collection[i];
           return html`
@@ -239,7 +244,7 @@ export class RecycleView extends LitElement {
             </div>
           `
         })}
-        <div class="bottomSentinal></div>
+        <div class="sentinal bottomSentinal"></div>
       </div>
     `;
   }
