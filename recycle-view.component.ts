@@ -115,7 +115,7 @@ export class RecycleView extends LitElement {
     super();
     this.collectionSize = 52;
     this.collection = initCollection(this.collectionSize);
-    this.listSize = 24;
+    this.listSize = 30;
   }
 
   firstUpdated() {
