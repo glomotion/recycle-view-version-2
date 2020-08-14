@@ -105,9 +105,9 @@ export class RecycleView extends LitElement {
   ----------------------------------------------------------------------- */
   constructor(props) {
     super();
-    this.collectionSize = 80;
+    this.collectionSize = 84;
     // this.listSize = 18; // 3 columns * 2 * 3
-    this.listSize = 24; // 4 columns * 2 * 3
+    this.listSize = 40; // 4 columns * 2 * 3
     this.collection = initCollection(this.collectionSize);
   }
 
@@ -120,12 +120,14 @@ export class RecycleView extends LitElement {
   ----------------------------------------------------------------------- */
   private recycleDom(firstIndex) {
     for (let i = 0; i < this.listSize; i++) {
-      const tile = this.shadowRoot.querySelector('.list__tile--' + i) as HTMLElement;
-      const img = tile.querySelector('.list__tile__img');
-      const title = tile.querySelector('.list__tile__title');
       const newItem = this.collection[i + firstIndex];
-      title.innerHTML = newItem.title;
-      img.setAttribute('src', newItem.imgSrc);
+      if (newItem) {
+        const tile = this.shadowRoot.querySelector('.list__tile--' + i) as HTMLElement;
+        const img = tile.querySelector('.list__tile__img');
+        const title = tile.querySelector('.list__tile__title');
+        title.innerHTML = newItem.title;
+        img.setAttribute('src', newItem.imgSrc);
+      }
     }
   }
 
