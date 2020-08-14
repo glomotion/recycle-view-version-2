@@ -73,6 +73,10 @@ export class RecycleView extends LitElement {
         text-align: center;
       }
 
+      .empty {
+        display: none;
+      }
+
       .list__tile__title {
 
       }
@@ -105,9 +109,9 @@ export class RecycleView extends LitElement {
   ----------------------------------------------------------------------- */
   constructor(props) {
     super();
-    this.collectionSize = 84;
+    this.collectionSize = 41;
     // this.listSize = 18; // 3 columns * 2 * 3
-    this.listSize = 40; // 4 columns * 2 * 3
+    this.listSize = 24; // 4 columns * 2 * 3
     this.collection = initCollection(this.collectionSize);
   }
 
@@ -123,10 +127,15 @@ export class RecycleView extends LitElement {
       const newItem = this.collection[i + firstIndex];
       if (newItem) {
         const tile = this.shadowRoot.querySelector('.list__tile--' + i) as HTMLElement;
+        tile.classList.remove('empty');
         const img = tile.querySelector('.list__tile__img');
         const title = tile.querySelector('.list__tile__title');
+        tile.setAttribute('data-current-tile-id', newItem.catCounter);
         title.innerHTML = newItem.title;
         img.setAttribute('src', newItem.imgSrc);
+      } else {
+        const tile = this.shadowRoot.querySelector('.list__tile--' + i) as HTMLElement;
+        tile.classList.add('empty');
       }
     }
   }
@@ -207,6 +216,7 @@ export class RecycleView extends LitElement {
       this.updatePadding(true);
       this.recycleDom(firstIndex);
       this.currentFirstIndex = firstIndex;
+      console.log('!!!!!!!!!!', firstIndex);
     }
 
     // Store current offset, for the next time:
