@@ -65,7 +65,7 @@ export class RecycleView extends LitElement {
       }
 
       .list__tile {
-        width: calc(25% - 20px);
+        width: calc(33.33% - 20px);
         background-color: #f5f5f5;
         color: grey;
         margin: 10px;
@@ -73,8 +73,13 @@ export class RecycleView extends LitElement {
         text-align: center;
       }
 
-      .empty {
-        display: none;
+      .list__tile--empty {
+        background: black;
+      }
+
+      .list__tile--empty .list__tile__img,
+      .list__tile--empty .list__tile__title {
+        opacity: 0;
       }
 
       .list__tile__title {
@@ -110,9 +115,16 @@ export class RecycleView extends LitElement {
   constructor(props) {
     super();
     this.collectionSize = 41;
-    // this.listSize = 18; // 3 columns * 2 * 3
-    this.listSize = 24; // 4 columns * 2 * 3
     this.collection = initCollection(this.collectionSize);
+    this.listSize = 18; // 3 columns * 2 * 3
+    // this.listSize = 24; // 4 columns * 2 * 3
+    const remainderCells = this.collectionSize % this.listSize;
+    if (remainderCells !== 0) {
+      this.collection.push(
+        ...new Array(this.listSize - remainderCells).fill({ empty: true })
+      );
+      this.collectionSize = this.collection.length;
+    }
   }
 
   firstUpdated() {
@@ -125,9 +137,9 @@ export class RecycleView extends LitElement {
   private recycleDom(firstIndex) {
     for (let i = 0; i < this.listSize; i++) {
       const newItem = this.collection[i + firstIndex];
-      if (newItem) {
+      if (!newItem.empty) {
         const tile = this.shadowRoot.querySelector('.list__tile--' + i) as HTMLElement;
-        tile.classList.remove('empty');
+        tile.classList.remove('list__tile--empty');
         const img = tile.querySelector('.list__tile__img');
         const title = tile.querySelector('.list__tile__title');
         tile.setAttribute('data-current-tile-id', newItem.catCounter);
@@ -135,7 +147,7 @@ export class RecycleView extends LitElement {
         img.setAttribute('src', newItem.imgSrc);
       } else {
         const tile = this.shadowRoot.querySelector('.list__tile--' + i) as HTMLElement;
-        tile.classList.add('empty');
+        tile.classList.add('list__tile--empty');
       }
     }
   }
@@ -143,7 +155,7 @@ export class RecycleView extends LitElement {
   private updatePadding(scrollingDownwards = true) {
     const container = this.shadowRoot.querySelector('.list') as HTMLElement;
     const firstItem = container.querySelector('.list__tile');
-    const removePaddingValue = getOuterHeight(firstItem) * (this.listSize / 8) + 1;
+    const removePaddingValue = getOuterHeight(firstItem) * (this.listSize / 6) + 1;
 
     if (scrollingDownwards) {
       this.paddingTop += removePaddingValue;
@@ -157,7 +169,7 @@ export class RecycleView extends LitElement {
   }
 
   private getNewWindowFirstIndex(scrollingDownwards = true) {
-    const increment = this.listSize / 8;
+    const increment = this.listSize / 6;
     let firstIndex;
     
     if (scrollingDownwards) {
@@ -192,6 +204,7 @@ export class RecycleView extends LitElement {
       this.updatePadding(false);
       this.recycleDom(firstIndex);
       this.currentFirstIndex = firstIndex;
+      console.log('!!!!!!!!!!', firstIndex);
     }
 
     // Store current offset, for the next time:
@@ -253,7 +266,7 @@ export class RecycleView extends LitElement {
         ${moo.map((_, i) => {
           const tile = collection[i];
           return html`
-            <div class="list__tile list__tile--${i}">
+            <div class="list__tile list__tile--${i}" data-current-tile-id=${tile.catCounter}>
               <div class="list__tile__title">${tile.title} title text</div>
               <img class="list__tile__img" src=${tile.imgSrc} alt="moo" />
             </div>
