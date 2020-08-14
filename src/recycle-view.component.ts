@@ -1,6 +1,6 @@
-import { html, css, LitElement, property } from "lit-element";
+import { html, LitElement } from 'lit-element';
 
-import { styles } from "./recycle-view.styles";
+import { styles } from './recycle-view.styles';
 
 /* DEMO HELPER FUNCTIONS:
   ----------------------------------------------------------------------- */
@@ -8,7 +8,7 @@ const getRandomCatImg = () => {
   const randomNum = () => {
     return Math.floor(Math.random() * 100000);
   };
-  const url = "https://source.unsplash.com/collection/139386/200x200/?sig=";
+  const url = 'https://source.unsplash.com/collection/139386/200x200/?sig=';
   return url + randomNum();
 };
 
@@ -26,9 +26,9 @@ const initCollection = (numberOfItems) => {
 
 const getOuterHeight = (el) => {
   const computedStyles = window.getComputedStyle(el);
-  const marginTop = parseInt(computedStyles.getPropertyValue("margin-top"));
+  const marginTop = parseInt(computedStyles.getPropertyValue('margin-top'));
   const marginBottom = parseInt(
-    computedStyles.getPropertyValue("margin-bottom")
+    computedStyles.getPropertyValue('margin-bottom')
   );
   return el.offsetHeight + marginTop + marginBottom;
 };
@@ -37,9 +37,11 @@ const getOuterHeight = (el) => {
   ----------------------------------------------------------------------- */
 
 export class RecycleView extends LitElement {
-  @property({ type: Array }) itemsCollection: [];
-  @property({ type: Number }) random: number;
-  @property({ type: String }) layoutMode: string;
+  static get properties() { 
+    return {
+      random: { type: String },
+    };
+  }
 
   static get styles() {
     return styles;
@@ -54,6 +56,7 @@ export class RecycleView extends LitElement {
   private paddingTop = 0;
   private paddingBottom = 0;
   private atListEnd = false;
+  random: string;
 
   private state = {
     topSentinelPreviousY: 0,
@@ -80,20 +83,18 @@ export class RecycleView extends LitElement {
   ----------------------------------------------------------------------- */
   constructor() {
     super();
+    this.random = '0';
     this.collection = initCollection(55);
     this.listSize = 27;
   }
 
-  protected firstUpdated() {
+  firstUpdated() {
     this.initIntersectionObserver();
   }
 
-  protected updated(changes: any) {
-    super.updated(changes);
-    console.log("changes!!", changes);
-    if (changes.has("itemsCollection")) {
-      console.log("$$$$$$$$$$$", this.itemsCollection);
-    }
+  update(changes: any) {
+    super.update(changes);
+    console.log('changes!!', changes);
   }
 
   /* PRIVATE METHODS:
@@ -103,28 +104,28 @@ export class RecycleView extends LitElement {
     for (let i = 0; i < this.listSize; i++) {
       const newItem = this.collection[i + firstIndex];
       const tile = this.shadowRoot.querySelector(
-        ".list__tile--" + i
+        '.list__tile--' + i
       ) as HTMLElement;
-      const img = tile.querySelector(".list__tile__img");
-      const title = tile.querySelector(".list__tile__title");
+      const img = tile.querySelector('.list__tile__img');
+      const title = tile.querySelector('.list__tile__title');
       if (newItem) {
-        tile.setAttribute("data-current-tile-id", newItem.catCounter);
+        tile.setAttribute('data-current-tile-id', newItem.catCounter);
         title.innerHTML = newItem.title;
-        tile.classList.remove("list__tile--empty");
-        img.setAttribute("src", newItem.imgSrc);
+        tile.classList.remove('list__tile--empty');
+        img.setAttribute('src', newItem.imgSrc);
       } else {
         this.atListEnd = true;
-        tile.classList.add("list__tile--empty");
-        tile.removeAttribute("data-current-tile-id");
-        title.innerHTML = "";
-        img.setAttribute("src", "");
+        tile.classList.add('list__tile--empty');
+        tile.removeAttribute('data-current-tile-id');
+        title.innerHTML = '';
+        img.setAttribute('src', '');
       }
     }
   }
 
   private updatePadding(scrollingDownwards = true) {
-    const container = this.shadowRoot.querySelector(".list") as HTMLElement;
-    const firstItem = container.querySelector(".list__tile");
+    const container = this.shadowRoot.querySelector('.list') as HTMLElement;
+    const firstItem = container.querySelector('.list__tile');
     const paddingOffset = getOuterHeight(firstItem) * this.paddingIncrement;
 
     if (scrollingDownwards) {
@@ -136,8 +137,8 @@ export class RecycleView extends LitElement {
         this.paddingTop === 0 ? 0 : this.paddingTop - paddingOffset;
       this.paddingBottom += paddingOffset;
     }
-    this.style.setProperty("--paddingTop", `${this.paddingTop}px`);
-    this.style.setProperty("--paddingBottom", `${this.paddingBottom}px`);
+    this.style.setProperty('--paddingTop', `${this.paddingTop}px`);
+    this.style.setProperty('--paddingBottom', `${this.paddingBottom}px`);
   }
 
   private calculateNewFirstIndex(scrollingDownwards = true) {
@@ -161,8 +162,8 @@ export class RecycleView extends LitElement {
 
     // Stop users from going off the page (in terms of the results set total)
     if (this.currentFirstIndex === 0) {
-      this.style.setProperty("--paddingBottom", "0px");
-      this.style.setProperty("--paddingTop", "0px");
+      this.style.setProperty('--paddingBottom', '0px');
+      this.style.setProperty('--paddingTop', '0px');
     }
 
     const currentY = entry.boundingClientRect.top;
@@ -215,9 +216,9 @@ export class RecycleView extends LitElement {
     const handleIntersection = (entries) => {
       entries.forEach((entry) => {
         const { target } = entry;
-        if (target.classList.contains("topSentinel")) {
+        if (target.classList.contains('topSentinel')) {
           this.topSentinelCallback(entry);
-        } else if (target.classList.contains("bottomSentinel")) {
+        } else if (target.classList.contains('bottomSentinel')) {
           this.bottomSentinelCallback(entry);
         }
       });
@@ -226,34 +227,33 @@ export class RecycleView extends LitElement {
     this.observer = new IntersectionObserver(handleIntersection, {
       root: this,
     });
-    this.observer.observe(this.shadowRoot.querySelector(".topSentinel"));
-    this.observer.observe(this.shadowRoot.querySelector(".bottomSentinel"));
+    this.observer.observe(this.shadowRoot.querySelector('.topSentinel'));
+    this.observer.observe(this.shadowRoot.querySelector('.bottomSentinel'));
   }
 
   render() {
-    const { collection, listSize, random } = this;
-    const list = new Array(listSize).fill({});
+    const list = new Array(this.listSize).fill({});
 
     return html`
-      <div>${random}</div>
-      <div class="list">
-        <div class="sentinel topSentinel"></div>
+      <div>${this.random}</div>
+      <div class='list'>
+        <div class='sentinel topSentinel'></div>
         ${list.map((_, i) => {
-          const tile = collection[i];
+          const tile = this.collection[i];
           return html`
             <div
-              class="list__tile list__tile--${i}"
+              class='list__tile list__tile--${i}'
               data-current-tile-id=${tile.catCounter}
             >
-              <div class="list__tile__title">${tile.title}</div>
-              <img class="list__tile__img" src=${tile.imgSrc} alt="moo" />
+              <div class='list__tile__title'>${tile.title}</div>
+              <img class='list__tile__img' src=${tile.imgSrc} alt='moo' />
             </div>
           `;
         })}
-        <div class="sentinel bottomSentinel"></div>
+        <div class='sentinel bottomSentinel'></div>
       </div>
     `;
   }
 }
 
-customElements.define("gu-recycle-view", RecycleView);
+customElements.define('gu-recycle-view', RecycleView);

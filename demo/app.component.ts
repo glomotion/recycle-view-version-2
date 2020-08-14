@@ -1,7 +1,5 @@
 import { html, css, LitElement } from 'lit-element';
 
-declare const Object: any;
-
 const dictionaryToMap = (dictionary: any): Map<number, any> => {
   return Object.entries(dictionary)
     .map(([key, val]) => ({ key, val }))
@@ -32,22 +30,19 @@ export class App extends LitElement {
     return {};
   }
 
-  private protos = [];
-  private rand = 0;
+  protos = [];
+  rand = '0';
 
   /* LIT ELEMENT COMPONENT LIFE CYCLE EVENTS:
   ----------------------------------------------------------------------- */
   constructor() {
     super();
     this.fetchProtos();
-  }
-
-  protected firstUpdated() {
     setInterval(() => {
-      this.rand = Math.random();
+      this.rand = `${Math.random()}`;
       console.log('!!!!!!!!!!!!', this.rand);
     }, 1000);
-  } 
+  }
 
   /* PRIVATE METHODS:
   ----------------------------------------------------------------------- */
@@ -64,7 +59,7 @@ export class App extends LitElement {
 
   protected render() {
     return html`
-      <gu-recycle-view .random=${this.rand} .itemsCollection=${this.protos}></gu-recycle-view>
+      <gu-recycle-view .random=${this.rand}></gu-recycle-view>
     `;
   }
 }
