@@ -32,7 +32,7 @@ export class App extends LitElement {
     return {};
   }
 
-  private protosCollection = [];
+  private protos = [];
 
   /* LIT ELEMENT COMPONENT LIFE CYCLE EVENTS:
   ----------------------------------------------------------------------- */
@@ -52,15 +52,14 @@ export class App extends LitElement {
       .then(data => {
         const asMap = dictionaryToMap(data);
         const asArray = Array.from(asMap.entries());
-        this.protosCollection = asArray;
+        this.protos = asArray;
       })
       .catch(err => console.error(err));
   }
 
   protected render() {
     return html`
-      <!-- <gu-recycle-view .collection=${this.protosCollection}></gu-recycle-view> -->
-      <gu-recycle-view></gu-recycle-view>
+      <gu-recycle-view .itemsCollection=${this.protos}></gu-recycle-view>
     `;
   }
 }
