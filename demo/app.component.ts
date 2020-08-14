@@ -59,7 +59,7 @@ export class App extends LitElement {
 
   protected render() {
     return html`
-      <gu-recycle-view collection=${this.protosCollection}></gu-recycle-view>
+      <gu-recycle-view .collection=${this.protosCollection}></gu-recycle-view>
     `;
   }
 }

@@ -2,9 +2,32 @@
   "name": "typescript",
   "version": "0.0.0",
   "private": true,
+  "scripts": {
+    "clear:dist": "rm -rf dist/",
+    "prebuild": "yarn clear:dist;",
+    "build": "yarn build:src",
+    "prebuild:src": "yarn clear:dist",
+    "build:src": "webpack --config ./webpack.config.js",
+    "dev:demo": "webpack-dev-server --config ./webpack.demo.config.js"
+  },
   "dependencies": {
-    "lit-element": "2.3.1",
-    "requestidlecallback-polyfill": "^1.0.2",
-    "stats.js": "0.17.0"
+    "@juggle/resize-observer": "^2.3.0",
+    "@webcomponents/webcomponentsjs": "^2.3.0",
+    "lit-element": "2.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^12.7.2",
+    "css-loader": "^3.2.0",
+    "file-loader": "^4.2.0",
+    "file-saver": "^2.0.2",
+    "html-webpack-plugin": "^3.2.0",
+    "style-loader": "^1.0.0",
+    "ts-loader": "^6.0.4",
+    "typescript": "^3.5.3",
+    "url-loader": "^2.1.0",
+    "webpack": "^4.39.2",
+    "webpack-bundle-analyzer": "^3.8.0",
+    "webpack-cli": "^3.3.6",
+    "webpack-dev-server": "^3.8.0"
   }
 }

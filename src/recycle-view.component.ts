@@ -29,8 +29,6 @@ const getOuterHeight = (el) => {
   return el.offsetHeight + marginTop + marginBottom;
 }
 
-const getNumberFromStyle = style => parseInt(style, 10);
-
 /* THE RE-CYCLE VIEW COMPONENT:
   ----------------------------------------------------------------------- */
 
