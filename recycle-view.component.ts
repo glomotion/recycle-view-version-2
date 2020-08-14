@@ -57,6 +57,7 @@ export class RecycleView extends LitElement {
         margin: 0;
         display: flex;
         flex-wrap: wrap;
+        padding-left: 10px;
       }
 
       .sentinal {
@@ -65,21 +66,17 @@ export class RecycleView extends LitElement {
       }
 
       .list__tile {
-        width: calc(50% - 20px);
+        width: calc(33.33% - 10px);
         background-color: #f5f5f5;
         color: grey;
-        margin: 10px;
+        margin: 0 10px 10px 0;
         padding: 10px;
         text-align: center;
       }
 
       .list__tile--empty {
-        background: black;
-      }
-
-      .list__tile--empty .list__tile__img,
-      .list__tile--empty .list__tile__title {
-        opacity: 0;
+        background: transparent;
+        border: 2px dashed #eee;
       }
 
       .list__tile__title {
@@ -116,9 +113,9 @@ export class RecycleView extends LitElement {
   ----------------------------------------------------------------------- */
   constructor(props) {
     super();
-    this.collectionSize = 43;
+    this.collectionSize = 52;
     this.collection = initCollection(this.collectionSize);
-    this.listSize = 20;
+    this.listSize = 24;
   }
 
   firstUpdated() {
@@ -129,7 +126,7 @@ export class RecycleView extends LitElement {
   /* PRIVATE METHODS:
   ----------------------------------------------------------------------- */
   private get listIncrement() {
-    return 10;
+    return 15;
   }
   private get paddingIncrement() {
     return 5;
@@ -144,9 +141,11 @@ export class RecycleView extends LitElement {
       if (newItem) {
         tile.setAttribute('data-current-tile-id', newItem.catCounter);
         title.innerHTML = newItem.title;
+        tile.classList.remove('list__tile--empty');
         img.setAttribute('src', newItem.imgSrc);
       } else {
         this.atListEnd = true;
+        tile.classList.add('list__tile--empty');
         tile.removeAttribute('data-current-tile-id');
         title.innerHTML = '';
         img.setAttribute('src', '');
@@ -213,22 +212,13 @@ export class RecycleView extends LitElement {
   }
 
   private bottomSentryCallback(entry) {
-    console.log('!!!!!!!!!', this.atListEnd);
+    const currentY = entry.boundingClientRect.top;
 
-    // Stop users from going off the page (in terms of the results set total)
-    // if (this.calculateNewFirstIndex(true) + this.listIncrement > this.collectionSize) {
-    //   console.log('!!!!!!!!!! UNEVEN ENDING !!!!!!!!!!!!');
-    //   const firstIndex = this.collectionSize - this.listSize;
-    //   this.recycleDom(firstIndex);
-    //   this.currentFirstIndex = firstIndex;
-    //   return false;
-    // } else 
     if (this.atListEnd || this.currentFirstIndex === this.collectionSize - this.listSize) {
-      console.log('@@@@@@@@@ DOWNWARDS: EVEN END @@@@@@@@@@@@');
+      this.bottomSentinelPreviousY = currentY;
       return false;
     }
 
-    const currentY = entry.boundingClientRect.top;
     const isIntersecting = entry.isIntersecting;
     const shouldChangePage = currentY < this.bottomSentinelPreviousY &&
       isIntersecting;
