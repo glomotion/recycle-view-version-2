@@ -1,5 +1,4 @@
 import { html, css, LitElement } from 'lit-element';
-import Stats from 'stats.js';
 
 function numDomNodes(node) {
   if (!node.children || node.children.length == 0) {
