@@ -33,6 +33,7 @@ export class App extends LitElement {
   }
 
   private protos = [];
+  private rand = 0;
 
   /* LIT ELEMENT COMPONENT LIFE CYCLE EVENTS:
   ----------------------------------------------------------------------- */
@@ -42,6 +43,10 @@ export class App extends LitElement {
   }
 
   protected firstUpdated() {
+    setInterval(() => {
+      this.rand = Math.random();
+      console.log('!!!!!!!!!!!!', this.rand);
+    }, 1000);
   } 
 
   /* PRIVATE METHODS:
@@ -59,7 +64,7 @@ export class App extends LitElement {
 
   protected render() {
     return html`
-      <gu-recycle-view .itemsCollection=${this.protos}></gu-recycle-view>
+      <gu-recycle-view .random=${this.rand} .itemsCollection=${this.protos}></gu-recycle-view>
     `;
   }
 }

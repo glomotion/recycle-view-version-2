@@ -1,4 +1,4 @@
-import { html, css, LitElement } from 'lit-element';
+import { html, css, LitElement, property } from 'lit-element';
 
 /* DEMO HELPER FUNCTIONS:
   ----------------------------------------------------------------------- */
@@ -33,6 +33,10 @@ const getOuterHeight = (el) => {
   ----------------------------------------------------------------------- */
 
 export class RecycleView extends LitElement {
+  @property({ type: Array }) itemsCollection: [];
+  @property({ type: Number }) random: number;
+  @property({ type: String }) layoutMode: string;
+
   static get styles() {
     return css`
       :host,
@@ -58,7 +62,7 @@ export class RecycleView extends LitElement {
         padding-left: 10px;
       }
 
-      .sentinal {
+      .sentinel {
         width: 100%;
         height: 2px;
       }
@@ -92,18 +96,10 @@ export class RecycleView extends LitElement {
     `;
   }
 
-  static get properties() {
-    return {
-      itemsCollection: { type: Array },
-      layoutMode: { type: String },
-    };
-  }
-
   private topSentinelPreviousY = 0;
   private bottomSentinelPreviousY = 0;
   private listSize = 0;
   private collection: any[];
-  private itemsCollection: any[];
   private currentFirstIndex = 0;
   private observer: any;
   private paddingTop = 0;
@@ -133,18 +129,19 @@ export class RecycleView extends LitElement {
 
   /* LIT ELEMENT COMPONENT LIFE CYCLE EVENTS:
   ----------------------------------------------------------------------- */
-  constructor(props) {
+  constructor() {
     super();
     this.collection = initCollection(55);
     this.listSize = 27;
   }
 
-  firstUpdated() {
+  protected firstUpdated() {
     this.initIntersectionObserver();
   } 
 
-  updated(changes: any) {
+  protected updated(changes: any) {
     super.updated(changes);
+    console.log('changes!!', changes);
     if (changes.has('itemsCollection')) {
       console.log('$$$$$$$$$$$', this.itemsCollection);
     }
@@ -206,7 +203,7 @@ export class RecycleView extends LitElement {
     return firstIndex;
   }
 
-  private topSentryCallback(entry) {
+  private topSentinelCallback(entry) {
     this.atListEnd = false;
 
     // Stop users from going off the page (in terms of the results set total)
@@ -232,7 +229,7 @@ export class RecycleView extends LitElement {
     this.topSentinelPreviousY = currentY;
   }
 
-  private bottomSentryCallback(entry) {
+  private bottomSentinelCallback(entry) {
     const currentY = entry.boundingClientRect.top;
 
     if (this.atListEnd || this.currentFirstIndex === this.collectionSize - this.listSize) {
@@ -260,10 +257,10 @@ export class RecycleView extends LitElement {
     const handleIntersection = entries => {
       entries.forEach(entry => {
         const { target } = entry;
-        if (target.classList.contains('topSentinal')) {
-          this.topSentryCallback(entry);
-        } else if (target.classList.contains('bottomSentinal')) {
-          this.bottomSentryCallback(entry);
+        if (target.classList.contains('topSentinel')) {
+          this.topSentinelCallback(entry);
+        } else if (target.classList.contains('bottomSentinel')) {
+          this.bottomSentinelCallback(entry);
         }
       });
     }
@@ -271,18 +268,19 @@ export class RecycleView extends LitElement {
     this.observer = new IntersectionObserver(handleIntersection, {
       root: this,
     });
-    this.observer.observe(this.shadowRoot.querySelector(".topSentinal"));
-    this.observer.observe(this.shadowRoot.querySelector(".bottomSentinal"));
+    this.observer.observe(this.shadowRoot.querySelector(".topSentinel"));
+    this.observer.observe(this.shadowRoot.querySelector(".bottomSentinel"));
   }
 
   render() {
-    const { collection, listSize } = this;
-    const moo = new Array(listSize).fill({});
+    const { collection, listSize, random } = this;
+    const list = new Array(listSize).fill({});
 
     return html`
+      <div>${random}</div>
       <div class='list'>
-        <div class="sentinal topSentinal"></div>
-        ${moo.map((_, i) => {
+        <div class="sentinel topSentinel"></div>
+        ${list.map((_, i) => {
           const tile = collection[i];
           return html`
             <div class="list__tile list__tile--${i}" data-current-tile-id=${tile.catCounter}>
@@ -291,7 +289,7 @@ export class RecycleView extends LitElement {
             </div>
           `
         })}
-        <div class="sentinal bottomSentinal"></div>
+        <div class="sentinel bottomSentinel"></div>
       </div>
     `;
   }
