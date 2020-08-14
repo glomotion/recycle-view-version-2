@@ -95,42 +95,64 @@ export class RecycleView extends LitElement {
   }
 
   static get properties() {
-    return {};
+    return {
+      collection: { type: Array },
+      layoutMode: { type: String },
+    };
   }
 
   private topSentinelPreviousY = 0;
   private bottomSentinelPreviousY = 0;
   private listSize = 0;
-  private collectionSize = 100;
-  private collection = [];
+  private collection: [];
   private currentFirstIndex = 0;
   private observer: any;
   private paddingTop = 0;
   private paddingBottom = 0;
   private atListEnd = false;
 
+  private state = {
+    topSentinelPreviousY: 0,
+    bottomSentinelPreviousY: 0,
+    paddingBottom: 0,
+    paddingTop: 0,
+    atListEnd: false,
+    currentFirstIndex: 0,
+  };
+
+  private get collectionSize() {
+    return !!this.collection ? this.collection.length : 0;
+  }
+
+  private get listIncrement() {
+    return 15;
+  }
+
+  private get paddingIncrement() {
+    return 5;
+  }
+
   /* LIT ELEMENT COMPONENT LIFE CYCLE EVENTS:
   ----------------------------------------------------------------------- */
   constructor(props) {
     super();
-    this.collectionSize = 52;
-    this.collection = initCollection(this.collectionSize);
-    this.listSize = 30;
+    // this.collection = initCollection(55);
+    // this.listSize = 27;
   }
 
   firstUpdated() {
     this.initIntersectionObserver();
   } 
 
+  updated(changes: any) {
+    super.updated(changes);
+    if (changes.has('collection')) {
+      console.log('$$$$$$$$$$$', this.collection);
+    }
+  }
 
   /* PRIVATE METHODS:
   ----------------------------------------------------------------------- */
-  private get listIncrement() {
-    return 15;
-  }
-  private get paddingIncrement() {
-    return 5;
-  }
 
   private recycleDom(firstIndex) {
     for (let i = 0; i < this.listSize; i++) {
@@ -256,7 +278,7 @@ export class RecycleView extends LitElement {
   }
 
   render() {
-    const { collection } = this;
+    const { collection, listSize } = this;
     const moo = new Array(this.listSize).fill({});
     console.log('!!!!! RENDERING !!!!!');
 
