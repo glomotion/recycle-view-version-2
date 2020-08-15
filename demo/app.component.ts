@@ -1,4 +1,4 @@
-import { html, css, LitElement } from 'lit-element';
+import { html, css, LitElement } from "lit-element";
 
 declare const Object: any;
 
@@ -7,9 +7,9 @@ const dictionaryToMap = (dictionary: any): Map<number, any> => {
     .map(([key, val]) => ({ key, val }))
     .reduce(
       (acc, cur) => acc.set(Number(cur.key), cur.val as any),
-      new Map<number, any>(),
+      new Map<number, any>()
     );
-}
+};
 
 export class App extends LitElement {
   static get styles() {
@@ -29,10 +29,13 @@ export class App extends LitElement {
   }
 
   static get properties() {
-    return {};
+    return {
+      protos: { type: Array },
+      rand: { type: String },
+    };
   }
 
-  private protos = [];
+  private protos: any[] = [];
   private rand = 0;
 
   /* LIT ELEMENT COMPONENT LIFE CYCLE EVENTS:
@@ -45,28 +48,31 @@ export class App extends LitElement {
   protected firstUpdated() {
     setInterval(() => {
       this.rand = Math.random();
-      console.log('!!!!!!!!!!!!', this.rand);
+      console.log("!!!!!!!!!!!!", this.rand);
     }, 1000);
-  } 
+  }
 
   /* PRIVATE METHODS:
   ----------------------------------------------------------------------- */
   private fetchProtos() {
-    fetch('https://dev.godsunchained.com/proto?format=flat')
-      .then(response => response.json())
-      .then(data => {
+    fetch("https://dev.godsunchained.com/proto?format=flat")
+      .then((response) => response.json())
+      .then((data) => {
         const asMap = dictionaryToMap(data);
         const asArray = Array.from(asMap.entries());
         this.protos = asArray;
       })
-      .catch(err => console.error(err));
+      .catch((err) => console.error(err));
   }
 
   protected render() {
     return html`
-      <gu-recycle-view .random=${this.rand} .itemsCollection=${this.protos}></gu-recycle-view>
+      <gu-recycle-view
+        .random=${this.rand}
+        .itemsCollection=${this.protos}
+      ></gu-recycle-view>
     `;
   }
 }
 
-customElements.define('gu-app', App);
+customElements.define("gu-app", App);

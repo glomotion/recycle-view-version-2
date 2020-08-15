@@ -37,7 +37,7 @@ const getOuterHeight = (el) => {
   ----------------------------------------------------------------------- */
 
 export class RecycleView extends LitElement {
-  @property({ type: Array }) itemsCollection: [];
+  @property({ type: Array }) itemsCollection: any[];
   @property({ type: Number }) random: number;
   @property({ type: String }) layoutMode: string;
 
@@ -90,9 +90,8 @@ export class RecycleView extends LitElement {
 
   protected updated(changes: any) {
     super.updated(changes);
-    console.log("changes!!", changes);
     if (changes.has("itemsCollection")) {
-      console.log("$$$$$$$$$$$", this.itemsCollection);
+      console.log('!!!!!!!!!!!!! INIT !!!!!!!!!!!!');
     }
   }
 
