@@ -185,10 +185,10 @@ export class RecycleView extends LitElement {
 
     // check if user is actually Scrolling up
     if (shouldChangePage) {
-      const firstIndex = this.calculateNewFirstIndex(false);
+      const newFirstIndex = this.calculateNewFirstIndex(false);
       this.updatePadding(false);
-      // this.recycleDom(firstIndex);
-      this.state.currentFirstIndex = firstIndex;
+      this.domRecycleOperations(newFirstIndex);
+      this.state.currentFirstIndex = newFirstIndex;
     }
 
     // Store current offset, for the next time:
@@ -215,10 +215,10 @@ export class RecycleView extends LitElement {
 
     // check if user is actually Scrolling down
     if (shouldChangePage) {
-      const firstIndex = this.calculateNewFirstIndex(true);
+      const newFirstIndex = this.calculateNewFirstIndex(true);
       this.updatePadding(true);
-      // this.recycleDom(firstIndex);
-      this.state.currentFirstIndex = firstIndex;
+      this.domRecycleOperations(newFirstIndex);
+      this.state.currentFirstIndex = newFirstIndex;
     }
 
     // Store current offset, for the next time:
