@@ -102,7 +102,7 @@ export class RecycleView extends LitElement {
     }
   }
 
-  private internalDomRecycle(newFirstIndex) {
+  private internalDomRecycle(newFirstIndex: number) {
     for (let i = 0; i < this.listSize; i++) {
       const newItem = this.collection[i + newFirstIndex];
       const item = this.shadowRoot.querySelector(
