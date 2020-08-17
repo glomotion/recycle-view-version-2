@@ -97,7 +97,7 @@ export class RecycleView extends LitElement {
 
   /* PRIVATE METHODS:
   ----------------------------------------------------------------------- */
-
+  // @TODO: this function should be externalised - so that the childen elements can vary ...
   private recycleDom(firstIndex) {
     for (let i = 0; i < this.listSize; i++) {
       const newItem = this.collection[i + firstIndex];
