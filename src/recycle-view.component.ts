@@ -1,11 +1,11 @@
-import { html, LitElement, property } from "lit-element";
+import { html, LitElement, property, TemplateResult, CSSResult } from "lit-element";
 
 import { styles } from "./recycle-view.styles";
 
 /* HELPER FUNCTIONS:
   ----------------------------------------------------------------------- */
 
-const getOuterHeight = (el) => {
+const getOuterHeight = (el: HTMLElement) => {
   const computedStyles = window.getComputedStyle(el);
   const marginTop = parseInt(computedStyles.getPropertyValue("margin-top"));
   const marginBottom = parseInt(
@@ -21,15 +21,14 @@ export class RecycleView extends LitElement {
   @property({ type: Array }) collection: any[];
   @property({ type: Number }) listSize = 0;
   @property({ type: String }) layoutMode: string;
+  @property({ type: Object }) itemStyles: CSSResult;
+  @property({ type: Object }) itemTemplate: TemplateResult;
+
   @property({ attribute: false }) recycleDom: (
     firstIndex: number,
     listSize: number,
     nodePoolContainer: HTMLElement,
   ) => void;
-
-  static get styles() {
-    return styles;
-  }
 
   private intersectionObserver: any;
   // private paddingTop = 0;
@@ -38,7 +37,8 @@ export class RecycleView extends LitElement {
   // private bottomSentinelPreviousY = 0;
   // private currentFirstIndex = 0;
   // private atListEnd = false;
-  private itemTemplate: HTMLElement;
+  private itemTemplateDom: HTMLElement;
+  private nodePoolContainerDom: HTMLElement;
 
   private state = {
     topSentinelPreviousY: 0,
@@ -64,8 +64,13 @@ export class RecycleView extends LitElement {
   /* LIT ELEMENT COMPONENT LIFE CYCLE EVENTS:
   ----------------------------------------------------------------------- */
   firstUpdated() {
-    this.storeItemTemplate();
+    this.storeNodeReferences();
     this.initIntersectionObserver();
+  }
+
+  // Allow styles to be passed into this component (use lightDom, not ShadowDom)
+  protected createRenderRoot() {
+    return this;
   }
 
   protected updated(changes: any) {
@@ -74,7 +79,6 @@ export class RecycleView extends LitElement {
       this.listSize = 27;
       this.reset();
       this.domRecycleOperations(0);
-      console.log("!!!!!!!!!!!!! INIT !!!!!!!!!!!!");
     }
   }
 
@@ -85,41 +89,35 @@ export class RecycleView extends LitElement {
     this.initNodePool();
   }
 
-  private storeItemTemplate(): void {
-    const slot = this.shadowRoot.getElementById(
-      "itemTemplate"
-    ) as HTMLSlotElement;
-    this.itemTemplate = slot.assignedElements()[0] as HTMLElement;
+  private storeNodeReferences(): void {
+    this.itemTemplateDom = this.querySelector('#itemTemplate').children[0] as HTMLElement;
+    this.nodePoolContainerDom = this.querySelector('.nodePool') as HTMLElement;
   }
 
   private clearNodePool(): void {
-    const nodePool = this.shadowRoot.querySelector('.nodePool');
-    nodePool.innerHTML = '';
+    this.nodePoolContainerDom.innerHTML = '';
   }
 
   private initNodePool(): void {
-    const nodePool = this.shadowRoot.querySelector('.nodePool');
     for (let index = 0; index < this.listSize; index++) {
-      const clone = this.itemTemplate.cloneNode(true) as HTMLElement;
+      const clone = this.itemTemplateDom.cloneNode(true) as HTMLElement;
       clone.classList.add('list__item',`list__item--${index}`);
-      nodePool.appendChild(clone);
+      this.nodePoolContainerDom.appendChild(clone);
     }
   }
 
   private internalDomRecycle(newFirstIndex: number): void {
     for (let i = 0; i < this.listSize; i++) {
       const newItem = this.collection[i + newFirstIndex];
-      const item = this.shadowRoot.querySelector(
-        '.list__item--' + i
-      ) as HTMLElement;
+      const itemDom = this.nodePoolContainerDom.children[i];
       
       if (newItem) {
-        item.setAttribute('data-current-item-id', newItem.id);
-        item.classList.remove('list__item--empty');
+        itemDom.setAttribute('data-current-item-id', newItem.id);
+        itemDom.classList.remove('list__item--empty');
       } else {
         this.state.atListEnd = true;
-        item.classList.add('list__item--empty');
-        item.removeAttribute('data-current-item-id');
+        itemDom.classList.add('list__item--empty');
+        itemDom.removeAttribute('data-current-item-id');
       }
     }
   }
@@ -128,14 +126,13 @@ export class RecycleView extends LitElement {
 
     // Internal recycle operations (updates internal state):
     this.internalDomRecycle(newFirstIndex);
-    
+
     // Kickoff externalized dom recycle operations:
-    this.recycleDom(newFirstIndex, this.listSize, this.shadowRoot.querySelector('.nodePool'));
+    this.recycleDom(newFirstIndex, this.listSize, this.querySelector('.nodePool'));
   }
 
   private updatePadding(scrollingDownwards = true): void {
-    const container = this.shadowRoot.querySelector(".list") as HTMLElement;
-    const firstItem = container.querySelector(".list__tile");
+    const firstItem = this.nodePoolContainerDom.querySelector(".list__item") as HTMLElement;
     const paddingOffset = getOuterHeight(firstItem) * this.paddingIncrement;
 
     if (scrollingDownwards) {
@@ -154,7 +151,7 @@ export class RecycleView extends LitElement {
   }
 
   private calculateNewFirstIndex(scrollingDownwards = true): number {
-    let firstIndex;
+    let firstIndex: number;
 
     if (scrollingDownwards) {
       firstIndex = this.state.currentFirstIndex + this.listIncrement;
@@ -171,6 +168,7 @@ export class RecycleView extends LitElement {
 
   private topSentinelCallback(entry): void {
     this.state.atListEnd = false;
+    console.log('topSentinelCallback');
 
     // Stop users from going off the page (in terms of the results set total)
     if (this.state.currentFirstIndex === 0) {
@@ -199,6 +197,8 @@ export class RecycleView extends LitElement {
 
   private bottomSentinelCallback(entry): boolean {
     const currentY = entry.boundingClientRect.top;
+
+    console.log('bottomSentinelCallback', currentY);
 
     // Stop the paging from going further than the edge of the collection:
     if (
@@ -242,16 +242,20 @@ export class RecycleView extends LitElement {
       root: this,
     });
     this.intersectionObserver.observe(
-      this.shadowRoot.querySelector(".topSentinel")
+      this.querySelector(".topSentinel")
     );
     this.intersectionObserver.observe(
-      this.shadowRoot.querySelector(".bottomSentinel")
+      this.querySelector(".bottomSentinel")
     );
   }
 
-  protected render() {
+  protected render(): TemplateResult {
     return html`
-      <slot id="itemTemplate"></slot>
+      <style>
+        ${styles}
+        ${this.itemStyles}
+      </style>
+      <div id="itemTemplate">${this.itemTemplate}</div>
       <div class="list">
         <div class="sentinel topSentinel"></div>
         <div class="nodePool"></div>

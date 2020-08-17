@@ -1,21 +1,14 @@
-import { html, css, LitElement, property } from "lit-element";
+import { css } from "lit-element";
 
 export const styles = css`
-  :host,
-  :host *,
-  :host *::before,
-  :host *::after {
-    box-sizing: border-box;
-  }
-
-  :host {
+  gu-recycle-view {
     width: 100%;
     height: 100%;
     overflow: auto;
     font-family: "Open Sans", sans-serif;
   }
 
-  .itemTemplate {
+  #itemTemplate {
     opacity: 0;
     position: absolute;
     top: 0; left: 0;

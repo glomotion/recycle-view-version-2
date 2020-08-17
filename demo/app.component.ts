@@ -48,11 +48,10 @@ export class App extends LitElement {
       .then((response) => response.json())
       .then((data) => {
         const asMap = dictionaryToMap(data);
-        const asArray = Array.from(asMap.entries()).map(item => ({
+        this.protos = Array.from(asMap.entries()).map((item) => ({
           id: item[0],
           ...item[1],
         }));
-        this.protos = asArray;
       })
       .catch((err) => console.error(err));
   }
@@ -61,14 +60,51 @@ export class App extends LitElement {
     return html`
       <gu-recycle-view
         .collection=${this.protos}
-        .recycleDom=${(firstIndex: number, listSize: number, nodePool: HTMLElement) => {
-          console.log('@@@@@@@@ PARENT RECYCLE DOM FN @@@@@@@@@', firstIndex, listSize, nodePool);
+        .itemStyles=${css`
+          .moo-cow,
+          .moo-cow *,
+          .moo-cow *::before,
+          .moo-cow *::after {
+            box-sizing: border-box;
+          }
+          .moo-cow {
+            display: block;
+          }
+          .moo-cow > img {
+            display: block;
+            width: 100%;
+          }
+          .moo-cow > h5 {
+            background: gold;
+          }
+        `}
+        .itemTemplate=${html`
+          <div class="moo-cow">
+            <img />
+            <h5></h5>
+          </div>
+        `}
+        .recycleDom=${(
+          firstIndex: number,
+          listSize: number,
+          nodePoolContainer: HTMLElement
+        ) => {
+          console.log(
+            "@@@@@@@@@@ PARENT RECYCLE DOM @@@@@@@",
+            firstIndex,
+            listSize,
+            nodePoolContainer
+          );
+          for (let index = 0; index < listSize; index++) {
+            const newItem = this.protos[index + firstIndex];
+            const itemDom = nodePoolContainer.children[index];
+            const img = itemDom.querySelector("img");
+            const title = itemDom.querySelector("h5");
+            title.innerHTML = newItem.name;
+            img.src = `https://card.godsunchained.com/?id=${newItem.id}&w=256&q=4`;
+          }
         }}
       >
-        <div class="moo-cow">
-          <img />
-          <h5></h5>
-        </div>
       </gu-recycle-view>
     `;
   }
