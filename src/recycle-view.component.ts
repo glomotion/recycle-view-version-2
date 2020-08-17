@@ -72,8 +72,7 @@ export class RecycleView extends LitElement {
     super.updated(changes);
     if (changes.has("collection")) {
       this.listSize = 27;
-      this.clearNodePool();
-      this.initNodePool();
+      this.reset();
       this.domRecycleOperations(0);
       console.log("!!!!!!!!!!!!! INIT !!!!!!!!!!!!");
     }
@@ -81,28 +80,33 @@ export class RecycleView extends LitElement {
 
   /* PRIVATE METHODS:
   ----------------------------------------------------------------------- */
-  private storeItemTemplate() {
+  private reset(): void {
+    this.clearNodePool();
+    this.initNodePool();
+  }
+
+  private storeItemTemplate(): void {
     const slot = this.shadowRoot.getElementById(
       "itemTemplate"
     ) as HTMLSlotElement;
     this.itemTemplate = slot.assignedElements()[0] as HTMLElement;
   }
 
-  private clearNodePool() {
+  private clearNodePool(): void {
     const nodePool = this.shadowRoot.querySelector('.nodePool');
     nodePool.innerHTML = '';
   }
 
-  private initNodePool() {
+  private initNodePool(): void {
     const nodePool = this.shadowRoot.querySelector('.nodePool');
     for (let index = 0; index < this.listSize; index++) {
       const clone = this.itemTemplate.cloneNode(true) as HTMLElement;
-      clone.classList.add(`list__item--${index}`);
+      clone.classList.add('list__item',`list__item--${index}`);
       nodePool.appendChild(clone);
     }
   }
 
-  private internalDomRecycle(newFirstIndex: number) {
+  private internalDomRecycle(newFirstIndex: number): void {
     for (let i = 0; i < this.listSize; i++) {
       const newItem = this.collection[i + newFirstIndex];
       const item = this.shadowRoot.querySelector(
@@ -120,7 +124,7 @@ export class RecycleView extends LitElement {
     }
   }
 
-  private domRecycleOperations(newFirstIndex: number) {
+  private domRecycleOperations(newFirstIndex: number): void {
 
     // Internal recycle operations (updates internal state):
     this.internalDomRecycle(newFirstIndex);
@@ -129,7 +133,7 @@ export class RecycleView extends LitElement {
     this.recycleDom(newFirstIndex, this.listSize, this.shadowRoot.querySelector('.nodePool'));
   }
 
-  private updatePadding(scrollingDownwards = true) {
+  private updatePadding(scrollingDownwards = true): void {
     const container = this.shadowRoot.querySelector(".list") as HTMLElement;
     const firstItem = container.querySelector(".list__tile");
     const paddingOffset = getOuterHeight(firstItem) * this.paddingIncrement;
@@ -149,7 +153,7 @@ export class RecycleView extends LitElement {
     this.style.setProperty("--paddingBottom", `${this.state.paddingBottom}px`);
   }
 
-  private calculateNewFirstIndex(scrollingDownwards = true) {
+  private calculateNewFirstIndex(scrollingDownwards = true): number {
     let firstIndex;
 
     if (scrollingDownwards) {
@@ -165,7 +169,7 @@ export class RecycleView extends LitElement {
     return firstIndex;
   }
 
-  private topSentinelCallback(entry) {
+  private topSentinelCallback(entry): void {
     this.state.atListEnd = false;
 
     // Stop users from going off the page (in terms of the results set total)
@@ -193,9 +197,10 @@ export class RecycleView extends LitElement {
     this.state.topSentinelPreviousY = currentY;
   }
 
-  private bottomSentinelCallback(entry) {
+  private bottomSentinelCallback(entry): boolean {
     const currentY = entry.boundingClientRect.top;
 
+    // Stop the paging from going further than the edge of the collection:
     if (
       this.state.atListEnd ||
       this.state.currentFirstIndex === this.collectionSize - this.listSize
@@ -218,9 +223,10 @@ export class RecycleView extends LitElement {
 
     // Store current offset, for the next time:
     this.state.bottomSentinelPreviousY = currentY;
+    return true;
   }
 
-  private initIntersectionObserver() {
+  private initIntersectionObserver(): void {
     const handleIntersection = (entries) => {
       entries.forEach((entry) => {
         const { target } = entry;
@@ -243,10 +249,7 @@ export class RecycleView extends LitElement {
     );
   }
 
-  render() {
-    console.log("!!!!!! RENDER !!!!!", this.listSize);
-    const list = new Array(this.listSize).fill({});
-
+  protected render() {
     return html`
       <slot id="itemTemplate"></slot>
       <div class="list">

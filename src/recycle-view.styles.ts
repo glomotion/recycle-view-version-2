@@ -40,7 +40,7 @@ export const styles = css`
     height: 2px;
   }
 
-  .list__tile {
+  .list__item {
     width: calc(33.33% - 10px);
     background-color: #f5f5f5;
     color: grey;
@@ -49,20 +49,8 @@ export const styles = css`
     text-align: center;
   }
 
-  .list__tile--empty {
+  .list__item--empty {
     background: transparent;
     border: 2px dashed #eee;
-  }
-
-  .list__tile__title {
-  }
-
-  .list__tile__img {
-    display: block;
-    margin: 0 auto;
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    opacity: 0;
   }
 `;
