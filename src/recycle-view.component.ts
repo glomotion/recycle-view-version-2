@@ -76,7 +76,7 @@ export class RecycleView extends LitElement {
   protected updated(changes: any) {
     super.updated(changes);
     if (changes.has("collection")) {
-      this.listSize = 27;
+      this.listSize = 21;
       this.reset();
       this.domRecycleOperations(0);
     }
