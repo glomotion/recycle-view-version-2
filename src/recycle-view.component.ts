@@ -1,34 +1,15 @@
-import { html, LitElement, property } from 'lit-element';
+import { html, LitElement, property } from "lit-element";
 
-import { styles } from './recycle-view.styles';
+import { styles } from "./recycle-view.styles";
 
-/* DEMO HELPER FUNCTIONS:
+/* HELPER FUNCTIONS:
   ----------------------------------------------------------------------- */
-const getRandomCatImg = () => {
-  const randomNum = () => {
-    return Math.floor(Math.random() * 100000);
-  };
-  const url = 'https://source.unsplash.com/collection/139386/200x200/?sig=';
-  return url + randomNum();
-};
-
-const initCollection = (numberOfItems) => {
-  const collection = [];
-  for (let i = 0; i < numberOfItems; i++) {
-    collection.push({
-      catCounter: i,
-      title: `Cat image: ${i}`,
-      imgSrc: getRandomCatImg(),
-    });
-  }
-  return collection;
-};
 
 const getOuterHeight = (el) => {
   const computedStyles = window.getComputedStyle(el);
-  const marginTop = parseInt(computedStyles.getPropertyValue('margin-top'));
+  const marginTop = parseInt(computedStyles.getPropertyValue("margin-top"));
   const marginBottom = parseInt(
-    computedStyles.getPropertyValue('margin-bottom')
+    computedStyles.getPropertyValue("margin-bottom")
   );
   return el.offsetHeight + marginTop + marginBottom;
 };
@@ -37,23 +18,27 @@ const getOuterHeight = (el) => {
   ----------------------------------------------------------------------- */
 
 export class RecycleView extends LitElement {
-  @property({ type: Array }) itemsCollection: any[];
-  @property({ type: Number }) random: number;
+  @property({ type: Array }) collection: any[];
+  @property({ type: Number }) listSize = 0;
   @property({ type: String }) layoutMode: string;
+  @property({ attribute: false }) recycleDom: (
+    firstIndex: number,
+    listSize: number,
+    nodePoolContainer: HTMLElement,
+  ) => void;
 
   static get styles() {
     return styles;
   }
 
-  private topSentinelPreviousY = 0;
-  private bottomSentinelPreviousY = 0;
-  private listSize = 0;
-  private collection: any[];
-  private currentFirstIndex = 0;
-  private observer: any;
-  private paddingTop = 0;
-  private paddingBottom = 0;
-  private atListEnd = false;
+  private intersectionObserver: any;
+  // private paddingTop = 0;
+  // private paddingBottom = 0;
+  // private topSentinelPreviousY = 0;
+  // private bottomSentinelPreviousY = 0;
+  // private currentFirstIndex = 0;
+  // private atListEnd = false;
+  private itemTemplate: HTMLElement;
 
   private state = {
     topSentinelPreviousY: 0,
@@ -78,74 +63,99 @@ export class RecycleView extends LitElement {
 
   /* LIT ELEMENT COMPONENT LIFE CYCLE EVENTS:
   ----------------------------------------------------------------------- */
-  constructor() {
-    super();
-    this.collection = initCollection(55);
-    this.listSize = 27;
-  }
-
   firstUpdated() {
+    this.storeItemTemplate();
     this.initIntersectionObserver();
   }
 
   protected updated(changes: any) {
     super.updated(changes);
-    if (changes.has("itemsCollection")) {
-      console.log('!!!!!!!!!!!!! INIT !!!!!!!!!!!!');
+    if (changes.has("collection")) {
+      this.listSize = 27;
+      this.clearNodePool();
+      this.initNodePool();
+      this.domRecycleOperations(0);
+      console.log("!!!!!!!!!!!!! INIT !!!!!!!!!!!!");
     }
   }
 
   /* PRIVATE METHODS:
   ----------------------------------------------------------------------- */
-  // @TODO: this function should be externalised - so that the childen elements can vary ...
-  private recycleDom(firstIndex) {
+  private storeItemTemplate() {
+    const slot = this.shadowRoot.getElementById(
+      "itemTemplate"
+    ) as HTMLSlotElement;
+    this.itemTemplate = slot.assignedElements()[0] as HTMLElement;
+  }
+
+  private clearNodePool() {
+    const nodePool = this.shadowRoot.querySelector('.nodePool');
+    nodePool.innerHTML = '';
+  }
+
+  private initNodePool() {
+    const nodePool = this.shadowRoot.querySelector('.nodePool');
+    for (let index = 0; index < this.listSize; index++) {
+      const clone = this.itemTemplate.cloneNode(true) as HTMLElement;
+      clone.classList.add(`list__item--${index}`);
+      nodePool.appendChild(clone);
+    }
+  }
+
+  private internalDomRecycle(newFirstIndex) {
     for (let i = 0; i < this.listSize; i++) {
-      const newItem = this.collection[i + firstIndex];
-      const tile = this.shadowRoot.querySelector(
-        '.list__tile--' + i
+      const newItem = this.collection[i + newFirstIndex];
+      const item = this.shadowRoot.querySelector(
+        '.list__item--' + i
       ) as HTMLElement;
-      const img = tile.querySelector('.list__tile__img');
-      const title = tile.querySelector('.list__tile__title');
+      
       if (newItem) {
-        tile.setAttribute('data-current-tile-id', newItem.catCounter);
-        title.innerHTML = newItem.title;
-        tile.classList.remove('list__tile--empty');
-        img.setAttribute('src', newItem.imgSrc);
+        item.setAttribute('data-current-item-id', newItem.id);
+        item.classList.remove('list__item--empty');
       } else {
-        this.atListEnd = true;
-        tile.classList.add('list__tile--empty');
-        tile.removeAttribute('data-current-tile-id');
-        title.innerHTML = '';
-        img.setAttribute('src', '');
+        this.state.atListEnd = true;
+        item.classList.add('list__item--empty');
+        item.removeAttribute('data-current-item-id');
       }
     }
   }
 
+  private domRecycleOperations(newFirstIndex: number) {
+
+    // Internal recycle operations (updates internal state):
+    this.internalDomRecycle(newFirstIndex);
+    
+    // Kickoff externalized dom recycle operations:
+    this.recycleDom(newFirstIndex, this.listSize, this.shadowRoot.querySelector('.nodePool'));
+  }
+
   private updatePadding(scrollingDownwards = true) {
-    const container = this.shadowRoot.querySelector('.list') as HTMLElement;
-    const firstItem = container.querySelector('.list__tile');
+    const container = this.shadowRoot.querySelector(".list") as HTMLElement;
+    const firstItem = container.querySelector(".list__tile");
     const paddingOffset = getOuterHeight(firstItem) * this.paddingIncrement;
 
     if (scrollingDownwards) {
-      this.paddingTop += paddingOffset;
-      this.paddingBottom =
-        this.paddingBottom === 0 ? 0 : this.paddingBottom - paddingOffset;
+      this.state.paddingTop += paddingOffset;
+      this.state.paddingBottom =
+        this.state.paddingBottom === 0
+          ? 0
+          : this.state.paddingBottom - paddingOffset;
     } else {
-      this.paddingTop =
-        this.paddingTop === 0 ? 0 : this.paddingTop - paddingOffset;
-      this.paddingBottom += paddingOffset;
+      this.state.paddingTop =
+        this.state.paddingTop === 0 ? 0 : this.state.paddingTop - paddingOffset;
+      this.state.paddingBottom += paddingOffset;
     }
-    this.style.setProperty('--paddingTop', `${this.paddingTop}px`);
-    this.style.setProperty('--paddingBottom', `${this.paddingBottom}px`);
+    this.style.setProperty("--paddingTop", `${this.state.paddingTop}px`);
+    this.style.setProperty("--paddingBottom", `${this.state.paddingBottom}px`);
   }
 
   private calculateNewFirstIndex(scrollingDownwards = true) {
     let firstIndex;
 
     if (scrollingDownwards) {
-      firstIndex = this.currentFirstIndex + this.listIncrement;
+      firstIndex = this.state.currentFirstIndex + this.listIncrement;
     } else {
-      firstIndex = this.currentFirstIndex - this.listIncrement;
+      firstIndex = this.state.currentFirstIndex - this.listIncrement;
     }
 
     if (firstIndex < 0) {
@@ -156,102 +166,96 @@ export class RecycleView extends LitElement {
   }
 
   private topSentinelCallback(entry) {
-    this.atListEnd = false;
+    this.state.atListEnd = false;
 
     // Stop users from going off the page (in terms of the results set total)
-    if (this.currentFirstIndex === 0) {
-      this.style.setProperty('--paddingBottom', '0px');
-      this.style.setProperty('--paddingTop', '0px');
+    if (this.state.currentFirstIndex === 0) {
+      this.style.setProperty("--paddingBottom", "0px");
+      this.style.setProperty("--paddingTop", "0px");
     }
 
     const currentY = entry.boundingClientRect.top;
     const isIntersecting = entry.isIntersecting;
     const shouldChangePage =
-      currentY > this.topSentinelPreviousY &&
+      currentY > this.state.topSentinelPreviousY &&
       isIntersecting &&
-      this.currentFirstIndex !== 0;
+      this.state.currentFirstIndex !== 0;
 
     // check if user is actually Scrolling up
     if (shouldChangePage) {
       const firstIndex = this.calculateNewFirstIndex(false);
       this.updatePadding(false);
-      this.recycleDom(firstIndex);
-      this.currentFirstIndex = firstIndex;
+      // this.recycleDom(firstIndex);
+      this.state.currentFirstIndex = firstIndex;
     }
 
     // Store current offset, for the next time:
-    this.topSentinelPreviousY = currentY;
+    this.state.topSentinelPreviousY = currentY;
   }
 
   private bottomSentinelCallback(entry) {
     const currentY = entry.boundingClientRect.top;
 
     if (
-      this.atListEnd ||
-      this.currentFirstIndex === this.collectionSize - this.listSize
+      this.state.atListEnd ||
+      this.state.currentFirstIndex === this.collectionSize - this.listSize
     ) {
-      this.bottomSentinelPreviousY = currentY;
+      this.state.bottomSentinelPreviousY = currentY;
       return false;
     }
 
     const isIntersecting = entry.isIntersecting;
     const shouldChangePage =
-      currentY < this.bottomSentinelPreviousY && isIntersecting;
+      currentY < this.state.bottomSentinelPreviousY && isIntersecting;
 
     // check if user is actually Scrolling down
     if (shouldChangePage) {
       const firstIndex = this.calculateNewFirstIndex(true);
       this.updatePadding(true);
-      this.recycleDom(firstIndex);
-      this.currentFirstIndex = firstIndex;
+      // this.recycleDom(firstIndex);
+      this.state.currentFirstIndex = firstIndex;
     }
 
     // Store current offset, for the next time:
-    this.bottomSentinelPreviousY = currentY;
+    this.state.bottomSentinelPreviousY = currentY;
   }
 
   private initIntersectionObserver() {
     const handleIntersection = (entries) => {
       entries.forEach((entry) => {
         const { target } = entry;
-        if (target.classList.contains('topSentinel')) {
+        if (target.classList.contains("topSentinel")) {
           this.topSentinelCallback(entry);
-        } else if (target.classList.contains('bottomSentinel')) {
+        } else if (target.classList.contains("bottomSentinel")) {
           this.bottomSentinelCallback(entry);
         }
       });
     };
 
-    this.observer = new IntersectionObserver(handleIntersection, {
+    this.intersectionObserver = new IntersectionObserver(handleIntersection, {
       root: this,
     });
-    this.observer.observe(this.shadowRoot.querySelector('.topSentinel'));
-    this.observer.observe(this.shadowRoot.querySelector('.bottomSentinel'));
+    this.intersectionObserver.observe(
+      this.shadowRoot.querySelector(".topSentinel")
+    );
+    this.intersectionObserver.observe(
+      this.shadowRoot.querySelector(".bottomSentinel")
+    );
   }
 
   render() {
+    console.log("!!!!!! RENDER !!!!!", this.listSize);
     const list = new Array(this.listSize).fill({});
 
     return html`
-      <div>${this.random}</div>
-      <div class='list'>
-        <div class='sentinel topSentinel'></div>
-        ${list.map((_, i) => {
-          const tile = this.collection[i];
-          return html`
-            <div
-              class='list__tile list__tile--${i}'
-              data-current-tile-id=${tile.catCounter}
-            >
-              <div class='list__tile__title'>${tile.title}</div>
-              <img class='list__tile__img' src=${tile.imgSrc} alt='moo' />
-            </div>
-          `;
-        })}
-        <div class='sentinel bottomSentinel'></div>
+      <slot id="itemTemplate"></slot>
+      <div class="list">
+        <div class="sentinel topSentinel"></div>
+        <div class="nodePool"></div>
+        <div class="sentinel bottomSentinel"></div>
       </div>
     `;
   }
 }
 
-customElements.define('gu-recycle-view', RecycleView);
+customElements.define("gu-recycle-view", RecycleView);

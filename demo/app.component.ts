@@ -29,22 +29,16 @@ export class App extends LitElement {
   static get properties() {
     return {
       protos: { type: Array },
-      rand: { type: Number },
     };
   }
 
   protos = [];
-  rand = 0;
 
   /* LIT ELEMENT COMPONENT LIFE CYCLE EVENTS:
   ----------------------------------------------------------------------- */
   constructor() {
     super();
     this.fetchProtos();
-    setInterval(() => {
-      this.rand = Math.random();
-      console.log('!!!!!!!!!!!!', this.rand);
-    }, 1000);
   }
 
   /* PRIVATE METHODS:
@@ -54,7 +48,10 @@ export class App extends LitElement {
       .then((response) => response.json())
       .then((data) => {
         const asMap = dictionaryToMap(data);
-        const asArray = Array.from(asMap.entries());
+        const asArray = Array.from(asMap.entries()).map(item => ({
+          id: item[0],
+          ...item[1],
+        }));
         this.protos = asArray;
       })
       .catch((err) => console.error(err));
@@ -63,9 +60,16 @@ export class App extends LitElement {
   protected render() {
     return html`
       <gu-recycle-view
-        .random=${this.rand}
-        .itemsCollection=${this.protos}
-      ></gu-recycle-view>
+        .collection=${this.protos}
+        .recycleDom=${(firstIndex: number, listSize: number, nodePool: HTMLElement) => {
+          console.log('@@@@@@@@ PARENT RECYCLE DOM FN @@@@@@@@@', firstIndex, listSize, nodePool);
+        }}
+      >
+        <div class="moo-cow">
+          <img />
+          <h5></h5>
+        </div>
+      </gu-recycle-view>
     `;
   }
 }

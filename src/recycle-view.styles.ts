@@ -15,13 +15,24 @@ export const styles = css`
     font-family: "Open Sans", sans-serif;
   }
 
+  .itemTemplate {
+    opacity: 0;
+    position: absolute;
+    top: 0; left: 0;
+    width: 0px;
+    height: 0px;
+  }
+
   .list {
     padding-top: var(--paddingTop);
     padding-bottom: var(--paddingBottom);
     margin: 0;
+    padding-left: 10px;
+  }
+
+  .nodePool {
     display: flex;
     flex-wrap: wrap;
-    padding-left: 10px;
   }
 
   .sentinel {
