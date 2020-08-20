@@ -287,24 +287,24 @@ export class RecycleView extends LitElement {
     this.addEventListener("scroll", handleScroll, { passive: true });
   }
 
-  // private checkScrollVelocity(scrollAmount: number) {
-  //   const DELAY = 100;
-  //   let delta = 0;
-  //   let timer: number;
+  private checkScrollVelocity(scrollAmount: number) {
+    const DELAY = 100;
+    let delta = 0;
+    let timer: number;
 
-  //   const clear = () => {
-  //     this.state.lastScrollPosition = null;
-  //     delta = 0;
-  //   };
+    const clear = () => {
+      this.state.lastScrollPosition = null;
+      delta = 0;
+    };
 
-  //   if (this.state.lastScrollPosition !== null) {
-  //     delta = scrollAmount - this.state.lastScrollPosition;
-  //   }
-  //   this.state.lastScrollPosition = scrollAmount;
-  //   clearTimeout(timer);
-  //   timer = window.setTimeout(clear, DELAY);
-  //   return delta;
-  // }
+    if (this.state.lastScrollPosition !== null) {
+      delta = scrollAmount - this.state.lastScrollPosition;
+    }
+    this.state.lastScrollPosition = scrollAmount;
+    clearTimeout(timer);
+    timer = window.setTimeout(clear, DELAY);
+    return delta;
+  }
 
   protected render(): TemplateResult {
     return html`
