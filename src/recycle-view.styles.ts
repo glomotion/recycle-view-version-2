@@ -1,7 +1,7 @@
 import { css } from "lit-element";
 
 export const styles = css`
-  gu-recycle-view {
+  :host {
     width: 100%;
     height: 100%;
     overflow: auto;
