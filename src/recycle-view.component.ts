@@ -22,6 +22,15 @@ const getOuterHeight = (el: HTMLElement) => {
   return el.offsetHeight + marginTop + marginBottom;
 };
 
+
+// Deploy a native ResizeOberver for this component instance:
+const ro = new ResizeObserver((entries) => {
+  entries.forEach((entry) => {
+    const el = entry.target as RecycleView;
+    el.debouncedResize();
+  });
+});
+
 /* THE RE-CYCLE VIEW COMPONENT:
   ----------------------------------------------------------------------- */
 
@@ -72,7 +81,15 @@ export class RecycleView extends LitElement {
 
   /* LIT ELEMENT COMPONENT LIFE CYCLE EVENTS:
   ----------------------------------------------------------------------- */
-  firstUpdated() {
+  connectedCallback() {
+    super.connectedCallback();
+    ro.observe(this);
+  }
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    ro.unobserve(this);
+  }
+  protected firstUpdated() {
     this.storeNodeReferences();
     this.initEventListeners();
   }
@@ -88,8 +105,21 @@ export class RecycleView extends LitElement {
     }
   }
 
+  /* PUBLIC METHODS:
+  ----------------------------------------------------------------------- */
+  public debouncedResize = debounce(() => this.handleResize(), 200);
+
+
   /* PRIVATE METHODS:
   ----------------------------------------------------------------------- */
+  /**
+   * Generic resize handling
+   */
+
+  private handleResize() {
+    console.log('!!!!!!!!! RESIZIN !!!!!!!!!!!!!!');
+  }
+
   private initRecycleView() {
     this.listSize = 21; // list length to recycle-view host height needs to be approx 3.4 : 1
     this.reset();
