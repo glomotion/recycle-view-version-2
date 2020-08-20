@@ -284,6 +284,7 @@ export class RecycleView extends LitElement {
 
       if (this.topSentinelDom.getBoundingClientRect().top > 0 && this.state.paddingTop !== 0) {
         console.log('!!!!!!!!!!!!!!!!!!!!!!!');
+        this.state.currentFirstIndex = 0;
         this.resetPadding();
         this.domRecycleOperations(0);
         this.scrollTop = 0;
