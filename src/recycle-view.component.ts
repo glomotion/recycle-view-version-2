@@ -64,7 +64,7 @@ export class RecycleView extends LitElement {
   }
 
   private get listIncrement() {
-    return 15;
+    return 15; // 15 === 5 rows 
   }
 
   private get paddingIncrement() {
@@ -81,7 +81,7 @@ export class RecycleView extends LitElement {
   protected updated(changes: any) {
     super.updated(changes);
     if (changes.has("collection")) {
-      this.listSize = 24;
+      this.listSize = 21; // list length to recycle-view host height needs to be approx 3.4 : 1
       this.reset();
       this.domRecycleOperations(0);
     }
