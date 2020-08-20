@@ -42,12 +42,6 @@ export class RecycleView extends LitElement {
   }
 
   private intersectionObserver: any;
-  // private paddingTop = 0;
-  // private paddingBottom = 0;
-  // private topSentinelPreviousY = 0;
-  // private bottomSentinelPreviousY = 0;
-  // private currentFirstIndex = 0;
-  // private atListEnd = false;
   private itemTemplateDom: HTMLElement;
   private nodePoolContainerDom: HTMLElement;
   private topSentinelDom: HTMLElement;
@@ -277,12 +271,10 @@ export class RecycleView extends LitElement {
     this.intersectionObserver.observe(this.topSentinelDom);
     this.intersectionObserver.observe(this.bottomSentinelDom);
 
-    // SCROLL PROTECTION:
+    // @NOTE: Add some OVER-SCROLL PROTECTION:
     const handleScroll = debounce((e) => {
       const rect = this.topSentinelDom.getBoundingClientRect();
-      console.log(rect.top);
-
-      if (this.topSentinelDom.getBoundingClientRect().top > 0 && this.state.paddingTop !== 0) {
+      if (rect.top > 0 && this.state.paddingTop !== 0) {
         console.log('!!!!!!!!!!!!!!!!!!!!!!!');
         this.state.currentFirstIndex = 0;
         this.resetPadding();
@@ -295,24 +287,24 @@ export class RecycleView extends LitElement {
     this.addEventListener("scroll", handleScroll, { passive: true });
   }
 
-  private checkScrollVelocity(scrollAmount: number) {
-    const DELAY = 100;
-    let delta = 0;
-    let timer: number;
+  // private checkScrollVelocity(scrollAmount: number) {
+  //   const DELAY = 100;
+  //   let delta = 0;
+  //   let timer: number;
 
-    const clear = () => {
-      this.state.lastScrollPosition = null;
-      delta = 0;
-    };
+  //   const clear = () => {
+  //     this.state.lastScrollPosition = null;
+  //     delta = 0;
+  //   };
 
-    if (this.state.lastScrollPosition !== null) {
-      delta = scrollAmount - this.state.lastScrollPosition;
-    }
-    this.state.lastScrollPosition = scrollAmount;
-    clearTimeout(timer);
-    timer = window.setTimeout(clear, DELAY);
-    return delta;
-  }
+  //   if (this.state.lastScrollPosition !== null) {
+  //     delta = scrollAmount - this.state.lastScrollPosition;
+  //   }
+  //   this.state.lastScrollPosition = scrollAmount;
+  //   clearTimeout(timer);
+  //   timer = window.setTimeout(clear, DELAY);
+  //   return delta;
+  // }
 
   protected render(): TemplateResult {
     return html`
