@@ -5,6 +5,7 @@ export const styles = css`
     width: 100%;
     height: 100%;
     overflow: auto;
+    position: relative;
     font-family: "Open Sans", sans-serif;
   }
 
@@ -30,7 +31,7 @@ export const styles = css`
 
   .sentinel {
     width: 100%;
-    height: 2px;
+    height: 1px;
   }
 
   .list__item {

@@ -89,12 +89,12 @@ export class App extends LitElement {
           listSize: number,
           nodePoolContainer: HTMLElement
         ) => {
-          console.log(
-            "@@@@@@@@@@ PARENT RECYCLE DOM @@@@@@@",
-            firstIndex,
-            listSize,
-            nodePoolContainer
-          );
+          // console.log(
+          //   "@@@@@@@@@@ PARENT RECYCLE DOM @@@@@@@",
+          //   firstIndex,
+          //   listSize,
+          //   nodePoolContainer
+          // );
           for (let index = 0; index < listSize; index++) {
             const newItem = this.protos[index + firstIndex];
             const itemDom = nodePoolContainer.children[index];

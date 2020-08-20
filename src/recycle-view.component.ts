@@ -181,15 +181,16 @@ export class RecycleView extends LitElement {
 
   private topSentinelCallback(entry): void {
     this.state.atListEnd = false;
-
+    
     // Stop users from going off the page (in terms of the results set total)
     if (this.state.currentFirstIndex === 0) {
       this.style.setProperty("--paddingBottom", "0px");
       this.style.setProperty("--paddingTop", "0px");
     }
-
+    
     const currentY = entry.boundingClientRect.top;
     const isIntersecting = entry.isIntersecting;
+    console.log('!!!!!TOP SENTINEL!!!!!!', isIntersecting);
     const shouldChangePage =
       currentY > this.state.topSentinelPreviousY &&
       isIntersecting &&
