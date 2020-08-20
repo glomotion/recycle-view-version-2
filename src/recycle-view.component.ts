@@ -5,7 +5,7 @@ import {
   TemplateResult,
   CSSResult,
 } from "lit-element";
-import { ResizeObserver } from '@juggle/resize-observer';
+import { ResizeObserver } from "@juggle/resize-observer";
 
 import { styles } from "./recycle-view.styles";
 
@@ -64,7 +64,7 @@ export class RecycleView extends LitElement {
   }
 
   private get listIncrement() {
-    return 15; // 15 === 5 rows 
+    return 15; // 15 === 5 rows
   }
 
   private get paddingIncrement() {
@@ -81,14 +81,22 @@ export class RecycleView extends LitElement {
   protected updated(changes: any) {
     super.updated(changes);
     if (changes.has("collection")) {
-      this.listSize = 21; // list length to recycle-view host height needs to be approx 3.4 : 1
-      this.reset();
-      this.domRecycleOperations(0);
+      if (this.collection.length > 0) {
+        this.initRecycleView();
+      } else {
+        // @TODO: Visuall handle what happens when there is nothing to display:
+      }
     }
   }
 
   /* PRIVATE METHODS:
   ----------------------------------------------------------------------- */
+  private initRecycleView() {
+    this.listSize = 21; // list length to recycle-view host height needs to be approx 3.4 : 1
+    this.reset();
+    this.domRecycleOperations(0);
+  }
+
   private reset(): void {
     this.clearNodePool();
     this.initNodePool();
@@ -130,17 +138,18 @@ export class RecycleView extends LitElement {
     }
   }
 
-  private domRecycleOperations(newFirstIndex: number): void {
-    // Internal recycle operations (updates internal state):
-    this.internalDomRecycle(newFirstIndex);
+  private domRecycleOperations = (newFirstIndex: number) =>
+    window.requestAnimationFrame(() => {
+      // Internal recycle operations (updates internal state):
+      this.internalDomRecycle(newFirstIndex);
 
-    // Kickoff externalized dom recycle operations:
-    this.recycleDom(
-      newFirstIndex,
-      this.listSize,
-      this.shadowRoot.querySelector(".nodePool")
-    );
-  }
+      // Kickoff externalized dom recycle operations:
+      this.recycleDom(
+        newFirstIndex,
+        this.listSize,
+        this.shadowRoot.querySelector(".nodePool")
+      );
+    });
 
   private updatePadding(scrollingDownwards = true): void {
     const firstItem = this.nodePoolContainerDom.querySelector(
@@ -181,16 +190,16 @@ export class RecycleView extends LitElement {
 
   private topSentinelCallback(entry): void {
     this.state.atListEnd = false;
-    
+
     // Stop users from going off the page (in terms of the results set total)
     if (this.state.currentFirstIndex === 0) {
       this.style.setProperty("--paddingBottom", "0px");
       this.style.setProperty("--paddingTop", "0px");
     }
-    
+
     const currentY = entry.boundingClientRect.top;
     const isIntersecting = entry.isIntersecting;
-    console.log('!!!!!TOP SENTINEL!!!!!!', isIntersecting);
+    // console.log("!!!!!TOP SENTINEL!!!!!!", isIntersecting, this.state);
     const shouldChangePage =
       currentY > this.state.topSentinelPreviousY &&
       isIntersecting &&
@@ -223,6 +232,7 @@ export class RecycleView extends LitElement {
     const isIntersecting = entry.isIntersecting;
     const shouldChangePage =
       currentY < this.state.bottomSentinelPreviousY && isIntersecting;
+    // console.log("!!!!!BOTTOM SENTINEL!!!!!!", isIntersecting, this.state);
 
     // check if user is actually Scrolling down
     if (shouldChangePage) {

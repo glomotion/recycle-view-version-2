@@ -1,12 +1,18 @@
 import { css } from "lit-element";
 
 export const styles = css`
+  :host,
+  :host *,
+  :host *::before,
+  :host *::after {
+    box-sizing: border-box;
+  }
   :host {
     width: 100%;
     height: 100%;
-    overflow: auto;
     position: relative;
-    font-family: "Open Sans", sans-serif;
+    scroll-behavior: smooth;
+    overflow: auto;
   }
 
   #itemTemplate {

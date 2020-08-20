@@ -61,26 +61,29 @@ export class App extends LitElement {
       <gu-recycle-view
         .collection=${this.protos}
         .itemStyles=${css`
-          .moo-cow,
-          .moo-cow *,
-          .moo-cow *::before,
-          .moo-cow *::after {
-            box-sizing: border-box;
-          }
-          .moo-cow {
+          .cardItem {
             display: block;
           }
-          .moo-cow > img {
-            display: block;
+          .cardItem__imgWrapper {
+            padding-bottom: 136%;
+            position: relative;
+          }
+          .cardItem__imgWrapper > img {
+            position: absolute;
             width: 100%;
+            height: 100%;
+            top: 0; left: 0;
           }
-          .moo-cow > h5 {
+          .cardItem > h5 {
             background: gold;
+            font-family: "Open Sans", sans-serif;
           }
         `}
         .itemTemplate=${html`
-          <div class="moo-cow">
-            <img />
+          <div class="cardItem">
+            <div class="cardItem__imgWrapper">
+              <img />
+            </div>
             <h5></h5>
           </div>
         `}
