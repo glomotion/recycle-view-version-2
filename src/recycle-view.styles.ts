@@ -7,12 +7,18 @@ export const styles = css`
   :host *::after {
     box-sizing: border-box;
   }
+
+  :host::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+  }
+
   :host {
     width: 100%;
     height: 100%;
     position: relative;
-    scroll-behavior: smooth;
     overflow: auto;
+    scrollbar-width: none;
   }
 
   #itemTemplate {

@@ -57,6 +57,8 @@ export class RecycleView extends LitElement {
     paddingTop: 0,
     atListEnd: false,
     currentFirstIndex: 0,
+    ticking: false,
+    lastScrollPosition: 0,
   };
 
   private get collectionSize() {
@@ -75,7 +77,7 @@ export class RecycleView extends LitElement {
   ----------------------------------------------------------------------- */
   firstUpdated() {
     this.storeNodeReferences();
-    this.initIntersectionObserver();
+    this.initEventListeners();
   }
 
   protected updated(changes: any) {
@@ -138,18 +140,17 @@ export class RecycleView extends LitElement {
     }
   }
 
-  private domRecycleOperations = (newFirstIndex: number) =>
-    window.requestAnimationFrame(() => {
-      // Internal recycle operations (updates internal state):
-      this.internalDomRecycle(newFirstIndex);
+  private domRecycleOperations = (newFirstIndex: number) => {
+    // Internal recycle operations (updates internal state):
+    this.internalDomRecycle(newFirstIndex);
 
-      // Kickoff externalized dom recycle operations:
-      this.recycleDom(
-        newFirstIndex,
-        this.listSize,
-        this.shadowRoot.querySelector(".nodePool")
-      );
-    });
+    // Kickoff externalized dom recycle operations:
+    this.recycleDom(
+      newFirstIndex,
+      this.listSize,
+      this.shadowRoot.querySelector(".nodePool")
+    );
+  }
 
   private updatePadding(scrollingDownwards = true): void {
     const firstItem = this.nodePoolContainerDom.querySelector(
@@ -247,7 +248,7 @@ export class RecycleView extends LitElement {
     return true;
   }
 
-  private initIntersectionObserver(): void {
+  private initEventListeners(): void {
     const handleIntersection = (entries) => {
       entries.forEach((entry) => {
         const { target } = entry;
@@ -268,6 +269,45 @@ export class RecycleView extends LitElement {
     this.intersectionObserver.observe(
       this.shadowRoot.querySelector(".bottomSentinel")
     );
+
+    // const handleScroll = (e) => {
+    //   if (!this.state.ticking) {
+    //     window.requestAnimationFrame(() => {
+    //       const velocity = Math.abs(this.checkScrollVelocity(this.scrollTop));
+    //       if (velocity >= 300) {
+    //         console.log('!!!!!!!!! STOP SUPER SCROLL !!!!!!!!', this.state.lastScrollPosition);
+    //         e.preventDefault();
+    //         this.scrollTo(0, 0);
+    //         this.scrollTo(0, this.state.lastScrollPosition);
+    //       }
+    //       this.state.ticking = false;
+    //     });
+    
+    //     this.state.ticking = true;
+    //   }
+    // };
+
+    // // @NOTE: bind scroll event, to watch for extreme scrolls:
+    // this.addEventListener('scroll', handleScroll, { passive: false });
+  }
+
+  private checkScrollVelocity(scrollAmount: number) {
+    const DELAY = 100;
+    let delta = 0;
+    let timer: number;
+  
+    const clear = () => {
+      this.state.lastScrollPosition = null;
+      delta = 0;
+    }
+    
+    if (this.state.lastScrollPosition !== null) {
+      delta = scrollAmount - this.state.lastScrollPosition;
+    }
+    this.state.lastScrollPosition = scrollAmount;
+    clearTimeout(timer);
+    timer = window.setTimeout(clear, DELAY);
+    return delta;
   }
 
   protected render(): TemplateResult {
