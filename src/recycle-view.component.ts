@@ -104,6 +104,7 @@ export class RecycleView extends LitElement {
 
   private reset(): void {
     this.state.currentFirstIndex = 0;
+    this.resetPadding();
     this.clearNodePool();
     this.initNodePool();
   }
