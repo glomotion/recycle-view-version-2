@@ -6,6 +6,7 @@ import {
   CSSResult,
 } from "lit-element";
 import { ResizeObserver } from "@juggle/resize-observer";
+import debounce from 'lodash.debounce';
 
 import { styles } from "./recycle-view.styles";
 
@@ -49,6 +50,8 @@ export class RecycleView extends LitElement {
   // private atListEnd = false;
   private itemTemplateDom: HTMLElement;
   private nodePoolContainerDom: HTMLElement;
+  private topSentinelDom: HTMLElement;
+  private bottomSentinelDom: HTMLElement;
 
   private state = {
     topSentinelPreviousY: 0,
@@ -100,6 +103,7 @@ export class RecycleView extends LitElement {
   }
 
   private reset(): void {
+    this.state.currentFirstIndex = 0;
     this.clearNodePool();
     this.initNodePool();
   }
@@ -110,6 +114,8 @@ export class RecycleView extends LitElement {
     this.nodePoolContainerDom = this.shadowRoot.querySelector(
       ".nodePool"
     ) as HTMLElement;
+    this.topSentinelDom = this.shadowRoot.querySelector(".topSentinel");
+    this.bottomSentinelDom = this.shadowRoot.querySelector(".bottomSentinel");
   }
 
   private clearNodePool(): void {
@@ -150,12 +156,10 @@ export class RecycleView extends LitElement {
       this.listSize,
       this.shadowRoot.querySelector(".nodePool")
     );
-  }
+  };
 
   private updatePadding(scrollingDownwards = true): void {
-    const firstItem = this.nodePoolContainerDom.querySelector(
-      ".list__item"
-    ) as HTMLElement;
+    const firstItem = this.nodePoolContainerDom.children[0] as HTMLElement;
     const paddingOffset = getOuterHeight(firstItem) * this.paddingIncrement;
 
     if (scrollingDownwards) {
@@ -171,6 +175,13 @@ export class RecycleView extends LitElement {
     }
     this.style.setProperty("--paddingTop", `${this.state.paddingTop}px`);
     this.style.setProperty("--paddingBottom", `${this.state.paddingBottom}px`);
+  }
+
+  private resetPadding() {
+    this.state.paddingBottom = 0;
+    this.state.paddingTop = 0;
+    this.style.setProperty("--paddingBottom", "0px");
+    this.style.setProperty("--paddingTop", "0px");
   }
 
   private calculateNewFirstIndex(scrollingDownwards = true): number {
@@ -194,8 +205,7 @@ export class RecycleView extends LitElement {
 
     // Stop users from going off the page (in terms of the results set total)
     if (this.state.currentFirstIndex === 0) {
-      this.style.setProperty("--paddingBottom", "0px");
-      this.style.setProperty("--paddingTop", "0px");
+      this.resetPadding();
     }
 
     const currentY = entry.boundingClientRect.top;
@@ -263,44 +273,36 @@ export class RecycleView extends LitElement {
     this.intersectionObserver = new IntersectionObserver(handleIntersection, {
       root: this,
     });
-    this.intersectionObserver.observe(
-      this.shadowRoot.querySelector(".topSentinel")
-    );
-    this.intersectionObserver.observe(
-      this.shadowRoot.querySelector(".bottomSentinel")
-    );
+    this.intersectionObserver.observe(this.topSentinelDom);
+    this.intersectionObserver.observe(this.bottomSentinelDom);
 
-    // const handleScroll = (e) => {
-    //   if (!this.state.ticking) {
-    //     window.requestAnimationFrame(() => {
-    //       const velocity = Math.abs(this.checkScrollVelocity(this.scrollTop));
-    //       if (velocity >= 300) {
-    //         console.log('!!!!!!!!! STOP SUPER SCROLL !!!!!!!!', this.state.lastScrollPosition);
-    //         e.preventDefault();
-    //         this.scrollTo(0, 0);
-    //         this.scrollTo(0, this.state.lastScrollPosition);
-    //       }
-    //       this.state.ticking = false;
-    //     });
-    
-    //     this.state.ticking = true;
-    //   }
-    // };
+    // SCROLL PROTECTION:
+    const handleScroll = debounce((e) => {
+      const rect = this.topSentinelDom.getBoundingClientRect();
+      console.log(rect.top);
 
-    // // @NOTE: bind scroll event, to watch for extreme scrolls:
-    // this.addEventListener('scroll', handleScroll, { passive: false });
+      if (this.topSentinelDom.getBoundingClientRect().top > 0 && this.state.paddingTop !== 0) {
+        console.log('!!!!!!!!!!!!!!!!!!!!!!!');
+        this.resetPadding();
+        this.domRecycleOperations(0);
+        this.scrollTop = 0;
+      }
+    }, 100);
+
+    // @NOTE: bind scroll event, to watch for extreme scrolls:
+    this.addEventListener("scroll", handleScroll, { passive: true });
   }
 
   private checkScrollVelocity(scrollAmount: number) {
     const DELAY = 100;
     let delta = 0;
     let timer: number;
-  
+
     const clear = () => {
       this.state.lastScrollPosition = null;
       delta = 0;
-    }
-    
+    };
+
     if (this.state.lastScrollPosition !== null) {
       delta = scrollAmount - this.state.lastScrollPosition;
     }
