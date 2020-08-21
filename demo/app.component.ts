@@ -13,6 +13,20 @@ const dictionaryToMap = (dictionary: any): Map<number, any> => {
 const artificialDelay = (time: number) =>
   new Promise((res) => setTimeout(() => res(), time));
 
+// @NOTE: DEMO helper methods:
+const getPagedProtos = (
+  startIndex: number,
+  pageSize: number,
+  collection: any[]
+): Promise<any[]> =>
+  new Promise((res) => {
+    return startIndex + pageSize > collection.length
+      ? res(collection.slice(startIndex))
+      : res(collection.slice(startIndex, startIndex + pageSize));
+  });
+
+const PAGE_SIZE = 500;
+
 export class App extends LitElement {
   static get styles() {
     return css`
@@ -33,10 +47,12 @@ export class App extends LitElement {
   static get properties() {
     return {
       protos: { type: Array },
+      startCollection: { type: Array },
     };
   }
 
   protos = [];
+  startCollection = [];
 
   /* LIT ELEMENT COMPONENT LIFE CYCLE EVENTS:
   ----------------------------------------------------------------------- */
@@ -56,6 +72,11 @@ export class App extends LitElement {
           id: item[0],
           ...item[1],
         }));
+        console.log('!!!!!!!!', this.protos);
+        return getPagedProtos(0, PAGE_SIZE, this.protos);
+      })
+      .then((pageOne) => {
+        this.startCollection = pageOne;
       })
       .catch((err) => console.error(err));
   }
@@ -63,9 +84,11 @@ export class App extends LitElement {
   protected render() {
     return html`
       <gu-recycle-view
-        .startingCollection=${this.protos}
-        .pagingDataProvider=${(lastIndexOfCurrentCollection: number) => {
-          return Promise.all([artificialDelay(1000)]);
+        .wholeCollectionSize=${this.protos.length}
+        .startCollection=${this.startCollection}
+        .pagingDataProvider=${async (lastIndexOfCurrentCollection: number) => {
+          await artificialDelay(1000)
+          return getPagedProtos(lastIndexOfCurrentCollection, PAGE_SIZE, this.protos); 
         }}
         .itemStyles=${css`
           .cardItem {

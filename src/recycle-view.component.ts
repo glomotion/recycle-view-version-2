@@ -6,7 +6,7 @@ import {
   CSSResult,
 } from "lit-element";
 import { ResizeObserver } from "@juggle/resize-observer";
-import debounce from 'lodash.debounce';
+import debounce from "lodash.debounce";
 
 import { styles } from "./recycle-view.styles";
 
@@ -21,7 +21,6 @@ const getOuterHeight = (el: HTMLElement) => {
   );
   return el.offsetHeight + marginTop + marginBottom;
 };
-
 
 // Deploy a native ResizeOberver for this component instance:
 const ro = new ResizeObserver((entries) => {
@@ -40,7 +39,8 @@ export interface RecycleViewListItem {
 
 export class RecycleView extends LitElement {
   @property({ type: Array }) collection: RecycleViewListItem[] = [];
-  @property({ type: Array }) startingCollection: RecycleViewListItem[] = [];
+  @property({ type: Array }) startCollection: RecycleViewListItem[] = [];
+  @property({ type: Number }) wholeCollectionSize: number;
   @property({ type: Number }) listSize = 0;
   @property({ type: String }) layoutMode: string;
   @property({ type: Object }) itemStyles: CSSResult;
@@ -51,7 +51,7 @@ export class RecycleView extends LitElement {
     nodePoolContainer: HTMLElement
   ) => void;
   @property({ attribute: false }) pagingDataProvider: (
-    lastIndexOfCurrentCollection: number,
+    lastIndexOfCurrentCollection: number
   ) => Promise<RecycleViewListItem[]>;
 
   static get styles() {
@@ -75,7 +75,7 @@ export class RecycleView extends LitElement {
     lastScrollPosition: 0,
   };
 
-  private get collectionSize() {
+  private get currentCollectionSize() {
     return !!this.collection ? this.collection.length : 0;
   }
 
@@ -104,19 +104,25 @@ export class RecycleView extends LitElement {
 
   protected updated(changes: any) {
     super.updated(changes);
-    if (changes.has("startingCollection")) {
-      if (this.startingCollection.length > 0) {
+    if (changes.has("startCollection")) {
+      if (this.startCollection.length > 0) {
         this.initRecycleView();
       } else {
         // @TODO: Visuall handle what happens when there is nothing to display:
       }
+    }
+    if (changes.has("collection")) {
+      console.log(
+        "!!!!!!! collection update!!!",
+        this.currentCollectionSize,
+        this.collection
+      );
     }
   }
 
   /* PUBLIC METHODS:
   ----------------------------------------------------------------------- */
   public debouncedResize = debounce(() => this.handleResize(), 200);
-
 
   /* PRIVATE METHODS:
   ----------------------------------------------------------------------- */
@@ -125,11 +131,42 @@ export class RecycleView extends LitElement {
    */
 
   private handleResize() {
-    console.log('!!!!!!!!! RESIZIN !!!!!!!!!!!!!!');
+    console.log("!!!!!!!!! RESIZIN !!!!!!!!!!!!!!");
+  }
+
+  private checkToGetMoreItems() {
+    // console.log(`
+    //   !!!!!!! check to get more items !!!!!!
+    //   current: ${this.state.currentFirstIndex}
+    //   end: ${this.currentCollectionSize - (this.listIncrement * 2)}
+    // `);
+
+    if (
+      this.state.currentFirstIndex >=
+      this.currentCollectionSize - this.listIncrement * 4
+    ) {
+      this.fetchMoreItems();
+    }
+  }
+
+  private fetchMoreItems() {
+    console.log(
+      "@@@@@ fetch more?",
+      this.currentCollectionSize,
+      this.wholeCollectionSize,
+      this.currentCollectionSize < this.wholeCollectionSize
+    );
+    return this.currentCollectionSize < this.wholeCollectionSize
+      ? this.pagingDataProvider(this.currentCollectionSize).then(
+          (moreItems) => {
+            this.collection = [...this.collection, ...moreItems];
+          }
+        )
+      : false;
   }
 
   private initRecycleView() {
-    this.collection = this.startingCollection;
+    this.collection = this.startCollection;
     this.listSize = 21; // list length to recycle-view host height needs to be approx 3.4 : 1
     this.reset();
     this.domRecycleOperations(0);
@@ -268,7 +305,8 @@ export class RecycleView extends LitElement {
     // Stop the paging from going further than the edge of the collection:
     if (
       this.state.atListEnd ||
-      this.state.currentFirstIndex === this.collectionSize - this.listSize
+      this.state.currentFirstIndex ===
+        this.currentCollectionSize - this.listSize
     ) {
       this.state.bottomSentinelPreviousY = currentY;
       return false;
@@ -285,6 +323,7 @@ export class RecycleView extends LitElement {
       this.updatePadding(true);
       this.domRecycleOperations(newFirstIndex);
       this.state.currentFirstIndex = newFirstIndex;
+      this.checkToGetMoreItems();
     }
 
     // Store current offset, for the next time:
@@ -314,7 +353,7 @@ export class RecycleView extends LitElement {
     const handleScroll = debounce((e) => {
       const rect = this.topSentinelDom.getBoundingClientRect();
       if (rect.top > 0 && this.state.paddingTop !== 0) {
-        console.log('!!!!!!!!!!!!!!!!!!!!!!!');
+        console.log("!!!!!!!!!!!!!!!!!!!!!!!");
         this.state.currentFirstIndex = 0;
         this.resetPadding();
         this.domRecycleOperations(0);
