@@ -1,5 +1,6 @@
 import { html, css, LitElement } from "lit-element";
 
+// @NOTE: methods taken from gu-cerberus codebase:
 const dictionaryToMap = (dictionary: any): Map<number, any> => {
   return Object.entries(dictionary)
     .map(([key, val]) => ({ key, val }))
@@ -8,6 +9,9 @@ const dictionaryToMap = (dictionary: any): Map<number, any> => {
       new Map<number, any>()
     );
 };
+
+const artificialDelay = (time: number) =>
+  new Promise((res) => setTimeout(() => res(), time));
 
 export class App extends LitElement {
   static get styles() {
@@ -59,7 +63,10 @@ export class App extends LitElement {
   protected render() {
     return html`
       <gu-recycle-view
-        .collection=${this.protos}
+        .startingCollection=${this.protos}
+        .pagingDataProvider=${(lastIndexOfCurrentCollection: number) => {
+          return Promise.all([artificialDelay(1000)]);
+        }}
         .itemStyles=${css`
           .cardItem {
             display: block;
@@ -72,7 +79,8 @@ export class App extends LitElement {
             position: absolute;
             width: 100%;
             height: 100%;
-            top: 0; left: 0;
+            top: 0;
+            left: 0;
           }
           .cardItem > h5 {
             background: gold;

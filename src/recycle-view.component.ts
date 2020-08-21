@@ -31,11 +31,16 @@ const ro = new ResizeObserver((entries) => {
   });
 });
 
+export interface RecycleViewListItem {
+  id: string;
+}
+
 /* THE RE-CYCLE VIEW COMPONENT:
   ----------------------------------------------------------------------- */
 
 export class RecycleView extends LitElement {
-  @property({ type: Array }) collection: any[];
+  @property({ type: Array }) collection: RecycleViewListItem[] = [];
+  @property({ type: Array }) startingCollection: RecycleViewListItem[] = [];
   @property({ type: Number }) listSize = 0;
   @property({ type: String }) layoutMode: string;
   @property({ type: Object }) itemStyles: CSSResult;
@@ -45,6 +50,9 @@ export class RecycleView extends LitElement {
     listSize: number,
     nodePoolContainer: HTMLElement
   ) => void;
+  @property({ attribute: false }) pagingDataProvider: (
+    lastIndexOfCurrentCollection: number,
+  ) => Promise<RecycleViewListItem[]>;
 
   static get styles() {
     return styles;
@@ -96,8 +104,8 @@ export class RecycleView extends LitElement {
 
   protected updated(changes: any) {
     super.updated(changes);
-    if (changes.has("collection")) {
-      if (this.collection.length > 0) {
+    if (changes.has("startingCollection")) {
+      if (this.startingCollection.length > 0) {
         this.initRecycleView();
       } else {
         // @TODO: Visuall handle what happens when there is nothing to display:
@@ -121,6 +129,7 @@ export class RecycleView extends LitElement {
   }
 
   private initRecycleView() {
+    this.collection = this.startingCollection;
     this.listSize = 21; // list length to recycle-view host height needs to be approx 3.4 : 1
     this.reset();
     this.domRecycleOperations(0);
