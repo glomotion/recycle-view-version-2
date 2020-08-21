@@ -129,14 +129,22 @@ export class App extends LitElement {
           //   listSize,
           //   nodePoolContainer
           // );
-          for (let index = 0; index < listSize; index++) {
+          Array.from(nodePoolContainer.children).forEach((child, index) => {
             const newItem = this.protos[index + firstIndex];
-            const itemDom = nodePoolContainer.children[index];
-            const img = itemDom.querySelector("img");
-            const title = itemDom.querySelector("h5");
+            const img = child.querySelector("img");
+            const title = child.querySelector("h5");
             title.innerHTML = newItem.name;
+            img.src = "";
             img.src = `https://card.godsunchained.com/?id=${newItem.id}&w=256&q=4`;
-          }
+          });
+          // for (let index = 0; index < listSize; index++) {
+          //   const newItem = this.protos[index + firstIndex];
+          //   const itemDom = nodePoolContainer.children[index];
+          //   const img = itemDom.querySelector("img");
+          //   const title = itemDom.querySelector("h5");
+          //   title.innerHTML = newItem.name;
+          //   img.src = `https://card.godsunchained.com/?id=${newItem.id}&w=256&q=4`;
+          // }
         }}
       >
       </gu-recycle-view>

@@ -352,8 +352,9 @@ export class RecycleView extends LitElement {
     // @NOTE: Add some OVER-SCROLL PROTECTION:
     const handleScroll = debounce((e) => {
       const rect = this.topSentinelDom.getBoundingClientRect();
-      if (rect.top > 0 && this.state.paddingTop !== 0) {
-        console.log("!!!!!!!!!!!!!!!!!!!!!!!");
+      console.log('!!!!!!', rect.top, this.state.paddingTop, rect.top > 1 && this.state.paddingTop !== 0)
+      if (rect.top > 1 && this.state.paddingTop !== 0) {
+        console.log("!!!!!!!!!! RESCUE !!!!!!!!!!");
         this.state.currentFirstIndex = 0;
         this.resetPadding();
         this.domRecycleOperations(0);
