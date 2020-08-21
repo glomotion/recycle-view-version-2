@@ -134,8 +134,9 @@ export class App extends LitElement {
             const img = child.querySelector("img");
             const title = child.querySelector("h5");
             title.innerHTML = newItem.name;
-            img.src = "";
-            img.src = `https://card.godsunchained.com/?id=${newItem.id}&w=256&q=4`;
+            img.src = '';
+            const newImgUrl = `https://card.godsunchained.com/?id=${newItem.id}&w=256&q=4`;
+            img.src = newImgUrl;
           });
           // for (let index = 0; index < listSize; index++) {
           //   const newItem = this.protos[index + firstIndex];
