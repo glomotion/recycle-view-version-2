@@ -1,9 +1,9 @@
-import { html, css, LitElement } from 'lit-element';
+import { html, css, LitElement } from "lit-element";
 
 import {
   RecycleViewClickSelectEvent,
   RecycleView,
-} from '../src/recycle-view.component';
+} from "../src/recycle-view.component";
 
 // @NOTE: methods taken from gu-cerberus codebase:
 const dictionaryToMap = (dictionary: any): Map<number, any> => {
@@ -11,7 +11,7 @@ const dictionaryToMap = (dictionary: any): Map<number, any> => {
     .map(([key, val]) => ({ key, val }))
     .reduce(
       (acc, cur) => acc.set(Number(cur.key), cur.val as any),
-      new Map<number, any>(),
+      new Map<number, any>()
     );
 };
 
@@ -22,7 +22,7 @@ const artificialDelay = (time: number) =>
 const getPagedProtos = (
   startIndex: number,
   pageSize: number,
-  collection: any[],
+  collection: any[]
 ): Promise<any[]> =>
   new Promise((res) => {
     return startIndex + pageSize > collection.length
@@ -69,15 +69,16 @@ export class App extends LitElement {
   /* PRIVATE METHODS:
   ----------------------------------------------------------------------- */
   private fetchProtos() {
-    fetch('https://dev.godsunchained.com/proto?format=flat')
+    fetch("https://dev.godsunchained.com/proto?format=flat")
       .then((response) => response.json())
       .then((data) => {
         const asMap = dictionaryToMap(data);
-        this.protos = Array.from(asMap.entries()).map((item) => ({
-          id: item[0],
-          ...item[1],
-        }))
-        .reverse();
+        this.protos = Array.from(asMap.entries())
+          .map((item) => ({
+            id: item[0],
+            ...item[1],
+          }))
+          .reverse();
         return getPagedProtos(0, PAGE_SIZE, this.protos);
       })
       .then((pageOne) => {
@@ -87,7 +88,7 @@ export class App extends LitElement {
   }
 
   private handleClick(e: RecycleViewClickSelectEvent) {
-    console.log('@@@@@@@@@@', e.detail);
+    console.log("@@@@@@@@@@", e.detail);
     const selectedId = e.detail.selectedItemIndex;
     // @NOTE: MAP version of logic:
     this.protos = this.protos.map((card) => ({
@@ -110,7 +111,7 @@ export class App extends LitElement {
 
     // @NOTE: trigger a recycle view render update:
     const recycleViewDom = this.shadowRoot.querySelector(
-      'gu-recycle-view',
+      "gu-recycle-view"
     ) as RecycleView;
     recycleViewDom.triggerRecycleUpdate();
   }
@@ -126,7 +127,7 @@ export class App extends LitElement {
           return getPagedProtos(
             lastIndexOfCurrentCollection,
             PAGE_SIZE,
-            this.protos,
+            this.protos
           );
         }}
         .itemStyles=${css`
@@ -150,54 +151,38 @@ export class App extends LitElement {
           .cardItem > h5 {
             margin: 0;
             background: gold;
-            font-family: 'Open Sans', sans-serif;
+            font-family: "Open Sans", sans-serif;
           }
         `}
         .itemTemplate=${html`
           <div class="cardItem">
-            <gu-card-picture showLoadingState></gu-card-picture>
-            <h5>test text</h5>
+            <div class="cardItem__imgWrapper">
+              <img />
+            </div>
+            <h5></h5>
           </div>
         `}
         .recycleDom=${(
           firstIndex: number,
           listSize: number,
-          nodePoolContainer: HTMLElement,
+          nodePoolContainer: HTMLElement
         ) => {
           console.log(
-            '@@@@@@@@@@ PARENT RECYCLE DOM @@@@@@@',
+            "@@@@@@@@@@ PARENT RECYCLE DOM @@@@@@@",
             firstIndex,
             listSize,
             nodePoolContainer,
-            this.protos[0],
+            this.protos[0]
           );
-          // Array.from(nodePoolContainer.children).forEach((child, index) => {
-          //   const newItem = this.protos[index + firstIndex];
-          //   const img = child.querySelector("img");
-          //   const title = child.querySelector("h5");
-          //   title.innerHTML = newItem.name;
-          //   img.src = '';
-          //   const newImgUrl = `https://card.godsunchained.com/?id=${newItem.id}&w=256&q=4`;
-          //   img.src = newImgUrl;
-          // });
-          for (let index = 0; index < listSize; index++) {
+          Array.from(nodePoolContainer.children).forEach((child, index) => {
             const newItem = this.protos[index + firstIndex];
-            const itemDom = nodePoolContainer.children[index];
-
-            // Update selection UI State:
-            if (newItem.selected) {
-              itemDom.classList.add('cardItem--selected');
-            } else {
-              itemDom.classList.remove('cardItem--selected');
-            }
-
-            // Update dom content:
-            const title = itemDom.querySelector('h5');
+            const img = child.querySelector("img");
+            const title = child.querySelector("h5");
             title.innerHTML = newItem.name;
-            const picture = itemDom.querySelector('gu-card-picture') as any;
-            picture.protoId = newItem.id;
-            picture.quality = '5';
-          }
+            img.src = '';
+            const newImgUrl = `https://card.godsunchained.com/?id=${newItem.id}&w=256&q=4`;
+            img.src = newImgUrl;
+          });
         }}
       >
       </gu-recycle-view>
@@ -205,4 +190,4 @@ export class App extends LitElement {
   }
 }
 
-customElements.define('gu-app', App);
+customElements.define("gu-app", App);
