@@ -4,25 +4,20 @@ import {
   property,
   TemplateResult,
   CSSResult,
-} from "lit-element";
-import { ResizeObserver } from "@juggle/resize-observer";
-import debounce from "lodash.debounce";
+} from 'lit-element';
+import { ResizeObserver } from '@juggle/resize-observer';
+import debounce from 'lodash.debounce';
+import throttle from 'lodash.throttle';
 
-import { styles } from "./recycle-view.styles";
+import * as layoutHelpers from './layout.helpers';
+import { styles } from './recycle-view.styles';
 
 /* HELPER FUNCTIONS:
   ----------------------------------------------------------------------- */
 
-const getOuterHeight = (el: HTMLElement) => {
-  const computedStyles = window.getComputedStyle(el);
-  const marginTop = parseInt(computedStyles.getPropertyValue("margin-top"));
-  const marginBottom = parseInt(
-    computedStyles.getPropertyValue("margin-bottom")
-  );
-  return el.offsetHeight + marginTop + marginBottom;
-};
-
 // Deploy a native ResizeOberver for this component instance:
+// @TODO: implement type safety for resize observer and intersection observer
+// https://gist.github.com/rhysd/cb83ab616211f271bc73186416a30811
 const ro = new ResizeObserver((entries) => {
   entries.forEach((entry) => {
     const el = entry.target as RecycleView;
@@ -34,6 +29,21 @@ export interface RecycleViewListItem {
   id: string;
 }
 
+export interface RecycleViewClickSelectEvent {
+  detail: {
+    itemNode: HTMLElement;
+    selectedItemIndex: number;
+    sourceEvent: UIEvent;
+  };
+}
+
+const ACCEPTABLE_CARD_SIZE_RANGE = {
+  minWidth: 170,
+  maxWidth: 285,
+};
+
+export const ITEM_GRID_MARGIN = 10;
+
 /* THE RE-CYCLE VIEW COMPONENT:
   ----------------------------------------------------------------------- */
 
@@ -41,17 +51,17 @@ export class RecycleView extends LitElement {
   @property({ type: Array }) collection: RecycleViewListItem[] = [];
   @property({ type: Array }) startCollection: RecycleViewListItem[] = [];
   @property({ type: Number }) wholeCollectionSize: number;
-  @property({ type: Number }) listSize = 0;
+  // @property({ type: Number }) listSize = 0;
   @property({ type: String }) layoutMode: string;
   @property({ type: Object }) itemStyles: CSSResult;
   @property({ type: Object }) itemTemplate: TemplateResult;
   @property({ attribute: false }) recycleDom: (
     firstIndex: number,
     listSize: number,
-    nodePoolContainer: HTMLElement
+    nodePoolContainer: HTMLElement,
   ) => void;
   @property({ attribute: false }) pagingDataProvider: (
-    lastIndexOfCurrentCollection: number
+    lastIndexOfCurrentCollection: number,
   ) => Promise<RecycleViewListItem[]>;
 
   static get styles() {
@@ -63,6 +73,7 @@ export class RecycleView extends LitElement {
   private nodePoolContainerDom: HTMLElement;
   private topSentinelDom: HTMLElement;
   private bottomSentinelDom: HTMLElement;
+  private overflowAreaDom: HTMLElement;
 
   private state = {
     topSentinelPreviousY: 0,
@@ -73,25 +84,44 @@ export class RecycleView extends LitElement {
     currentFirstIndex: 0,
     ticking: false,
     lastScrollPosition: 0,
+    currentColumnCount: 1,
+    currentRowCount: 1,
+    currentListSize: 0,
+    dimensions: {
+      container: {
+        w: 0,
+        h: 0,
+      },
+      singleItem: {
+        w: 0,
+        h: 0,
+        outerH: 0,
+      },
+    },
   };
 
   private get currentCollectionSize() {
     return !!this.collection ? this.collection.length : 0;
   }
 
+  // THE BELOW ARE CURRENTLY HARDCODED TO A 3 COLUMN LAYOUT:
   private get listIncrement() {
-    return 15; // 15 === 5 rows
+    return this.paddingIncrement * this.state.currentColumnCount;
+    // return 15; // 5 rows of 3 = 15 items
   }
 
   private get paddingIncrement() {
-    return 5;
+    return 4; // means that we always increment by 5 rows at once
   }
 
   /* LIT ELEMENT COMPONENT LIFE CYCLE EVENTS:
   ----------------------------------------------------------------------- */
+  constructor() {
+    super();
+  }
+
   connectedCallback() {
     super.connectedCallback();
-    ro.observe(this);
   }
   disconnectedCallback() {
     super.disconnectedCallback();
@@ -99,30 +129,33 @@ export class RecycleView extends LitElement {
   }
   protected firstUpdated() {
     this.storeNodeReferences();
-    this.initEventListeners();
+    ro.observe(this);
   }
 
   protected updated(changes: any) {
     super.updated(changes);
-    if (changes.has("startCollection")) {
+    if (changes.has('startCollection')) {
       if (this.startCollection.length > 0) {
         this.initRecycleView();
       } else {
-        // @TODO: Visuall handle what happens when there is nothing to display:
+        // @TODO: Visually handle what happens when there is nothing to display:
       }
     }
-    if (changes.has("collection")) {
-      console.log(
-        "!!!!!!! collection update!!!",
-        this.currentCollectionSize,
-        this.collection
-      );
-    }
+    // if (changes.has('collection')) {
+    //   console.log(
+    //     '!!!!!!! collection update (from pagination) !!!!!!!',
+    //     this.currentCollectionSize,
+    //     this.collection,
+    //   );
+    // }
   }
 
   /* PUBLIC METHODS:
   ----------------------------------------------------------------------- */
-  public debouncedResize = debounce(() => this.handleResize(), 200);
+  public debouncedResize = debounce(() => this.handleResize(), 400);
+  public triggerRecycleUpdate() {
+    this.domRecycleOperations(this.state.currentFirstIndex);
+  }
 
   /* PRIVATE METHODS:
   ----------------------------------------------------------------------- */
@@ -130,46 +163,148 @@ export class RecycleView extends LitElement {
    * Generic resize handling
    */
 
+  private handleItemClick(itemNode: HTMLElement, e: UIEvent) {
+    this.dispatchEvent(
+      new CustomEvent('onViewItemClick', {
+        detail: {
+          itemNode,
+          selectedItemIndex: parseInt(
+            itemNode.getAttribute('data-current-item-id'),
+            10,
+          ),
+          sourceEvent: e,
+        },
+      } as RecycleViewClickSelectEvent),
+    );
+  }
+
   private handleResize() {
-    console.log("!!!!!!!!! RESIZIN !!!!!!!!!!!!!!");
+    // @NOTRE: grab the width of the nodePoolContainerDom,
+    // because we need the width minus any scroll bars
+    this.state.dimensions.container.w = this.nodePoolContainerDom.offsetWidth;
+    this.state.dimensions.container.h = this.offsetHeight;
+
+    // @NOTE: the list dom object needs a min-height property to avoid flicker on windows browsers...
+    this.style.setProperty('--minHeight', `${this.offsetHeight + 150}`);
+    this.calculateGridColumns();
+    this.calculateListSize();
+    this.initRecycleView();
   }
 
   private checkToGetMoreItems() {
-    // console.log(`
-    //   !!!!!!! check to get more items !!!!!!
-    //   current: ${this.state.currentFirstIndex}
-    //   end: ${this.currentCollectionSize - (this.listIncrement * 2)}
-    // `);
-
-    if (
-      this.state.currentFirstIndex >=
-      this.currentCollectionSize - this.listIncrement * 4
-    ) {
-      this.fetchMoreItems();
-    }
-  }
-
-  private fetchMoreItems() {
-    console.log(
-      "@@@@@ fetch more?",
-      this.currentCollectionSize,
-      this.wholeCollectionSize,
+    return this.state.currentFirstIndex >=
+      this.currentCollectionSize - this.listIncrement * 4 &&
       this.currentCollectionSize < this.wholeCollectionSize
-    );
-    return this.currentCollectionSize < this.wholeCollectionSize
-      ? this.pagingDataProvider(this.currentCollectionSize).then(
-          (moreItems) => {
-            this.collection = [...this.collection, ...moreItems];
-          }
-        )
+      ? this.fetchMoreItems()
       : false;
   }
 
+  private fetchMoreItems() {
+    this.pagingDataProvider(this.currentCollectionSize).then((moreItems) => {
+      this.collection = [...this.collection, ...moreItems];
+    });
+  }
+
   private initRecycleView() {
+    // @NOTE: early exit, we have no usable data just yet...
+    if (this.startCollection.length === 0) {
+      return false;
+    }
+
+    // @NOTE: proceed with the initialization:
     this.collection = this.startCollection;
-    this.listSize = 21; // list length to recycle-view host height needs to be approx 3.4 : 1
     this.reset();
     this.domRecycleOperations(0);
+    this.initScrollAndIoListeners();
+  }
+
+  private calculateListSize() {
+    const { currentColumnCount, dimensions } = this.state;
+    const { container, singleItem } = dimensions;
+
+    if (container.h === 0) {
+      return false;
+    }
+
+    // @NOTE: Smaller form-factor screens require greater ratio's for the 
+    // total list item size vs the screen size  
+    // (to prevent the intersection observers from triggering during page changes)
+    let heightMultiplyer =
+      currentColumnCount === 1
+        ? 6.5
+        : container.h <= 150
+        ? 13
+        : container.h <= 250
+        ? 10
+        : container.h <= 500
+        ? 6
+        : 4;
+    let rowCount = 1;
+    let looping = true;
+    const itemHeight = singleItem.outerH;
+    while (looping && rowCount < 100) {
+      const allRowsHeight = rowCount * itemHeight;
+      // console.log('!!!!!! LOOPING !!!!!', this.state.dimensions.singleItem, rowCount, allRowsHeight);
+      if (allRowsHeight / container.h >= heightMultiplyer) {
+        looping = false;
+      } else {
+        rowCount += 1;
+      }
+    }
+
+    this.state.currentRowCount = rowCount;
+    // @NOTE: The list size must be atleast 8 on tiny devices (not exactly sure why)
+    this.state.currentListSize = rowCount * this.state.currentColumnCount;
+  }
+
+  private calculateGridColumns() {
+    const { container } = this.state.dimensions;
+
+    if (container.w === 0) {
+      return false;
+    }
+
+    let columnCount = 1;
+    let cardWidth = container.w - ITEM_GRID_MARGIN;
+    if (container.w > (ACCEPTABLE_CARD_SIZE_RANGE.minWidth + 20) * 2) {
+      let looping = true;
+      // @NOTE protect while loop from crashing out 40 * 200 = 8000px
+      // (no desktop resolutions should ever get wider than this ...)
+      while (looping && columnCount <= 40) {
+        cardWidth = Math.floor(container.w / columnCount);
+        cardWidth -= ITEM_GRID_MARGIN;
+        // console.log(`
+        //   !!!!! looping !!!
+        //   container.w: ${container.w},
+        //   container.w / columnCount: ${container.w / columnCount},
+        //   cardWidth: ${cardWidth},
+        //   columnCount: ${columnCount},
+        // `);
+        if (
+          cardWidth <= ACCEPTABLE_CARD_SIZE_RANGE.maxWidth &&
+          cardWidth >= ACCEPTABLE_CARD_SIZE_RANGE.minWidth
+        ) {
+          looping = false;
+        } else {
+          columnCount += 1;
+        }
+      }
+    }
+
+    // console.log('@@@@@@@@@@', columnCount);
+    this.state.currentColumnCount = columnCount;
+    this.setTemplateItemDimensions(cardWidth);
+    this.style.setProperty('--columnCount', `${columnCount}`);
+  }
+
+  private setTemplateItemDimensions(cardWidth: number) {
+    this.itemTemplateDom.classList.add('list__item');
+    this.itemTemplateDom.style.width = `${cardWidth}px`;
+    this.state.dimensions.singleItem.w = cardWidth;
+    this.state.dimensions.singleItem.h = this.itemTemplateDom.offsetHeight;
+    this.state.dimensions.singleItem.outerH = layoutHelpers.getOuterHeight(
+      this.itemTemplateDom,
+    );
   }
 
   private reset(): void {
@@ -180,58 +315,69 @@ export class RecycleView extends LitElement {
   }
 
   private storeNodeReferences(): void {
-    this.itemTemplateDom = this.shadowRoot.querySelector("#itemTemplate")
+    this.itemTemplateDom = this.shadowRoot.querySelector('#itemTemplate')
       .children[0] as HTMLElement;
     this.nodePoolContainerDom = this.shadowRoot.querySelector(
-      ".nodePool"
+      '.nodePool',
     ) as HTMLElement;
-    this.topSentinelDom = this.shadowRoot.querySelector(".topSentinel");
-    this.bottomSentinelDom = this.shadowRoot.querySelector(".bottomSentinel");
+    this.topSentinelDom = this.shadowRoot.querySelector('.topSentinel');
+    this.bottomSentinelDom = this.shadowRoot.querySelector('.bottomSentinel');
+    this.overflowAreaDom = this.shadowRoot.querySelector('.overflowArea');
+    // console.log(
+    //   'storeNodeReferences()',
+    //   this.itemTemplateDom,
+    //   this.nodePoolContainerDom,
+    //   this.topSentinelDom,
+    //   this.bottomSentinelDom,
+    // );
   }
 
   private clearNodePool(): void {
-    this.nodePoolContainerDom.innerHTML = "";
+    this.nodePoolContainerDom.innerHTML = '';
   }
 
   private initNodePool(): void {
-    for (let index = 0; index < this.listSize; index++) {
+    for (let index = 0; index < this.state.currentListSize; index++) {
       const clone = this.itemTemplateDom.cloneNode(true) as HTMLElement;
-      clone.classList.add("list__item", `list__item--${index}`);
+      clone.style.width = null;
+      clone.classList.add(`list__item--${index}`);
+      clone.addEventListener('click', this.handleItemClick.bind(this, clone));
       this.nodePoolContainerDom.appendChild(clone);
     }
   }
 
   private internalDomRecycle(newFirstIndex: number): void {
-    for (let i = 0; i < this.listSize; i++) {
+    for (let i = 0; i < this.state.currentListSize; i++) {
       const newItem = this.collection[i + newFirstIndex];
       const itemDom = this.nodePoolContainerDom.children[i];
+      // console.log('!!!!!!!! internalDomRecycle !!!!!!!', newItem, itemDom);
 
       if (newItem) {
-        itemDom.setAttribute("data-current-item-id", newItem.id);
-        itemDom.classList.remove("list__item--empty");
+        itemDom.setAttribute('data-current-item-id', newItem.id);
+        itemDom.classList.remove('list__item--empty');
       } else {
         this.state.atListEnd = true;
-        itemDom.classList.add("list__item--empty");
-        itemDom.removeAttribute("data-current-item-id");
+        itemDom.classList.add('list__item--empty');
+        itemDom.removeAttribute('data-current-item-id');
       }
     }
   }
 
-  private domRecycleOperations = (newFirstIndex: number) => {
+  private domRecycleOperations(newFirstIndex: number) {
     // Internal recycle operations (updates internal state):
     this.internalDomRecycle(newFirstIndex);
 
     // Kickoff externalized dom recycle operations:
     this.recycleDom(
       newFirstIndex,
-      this.listSize,
-      this.shadowRoot.querySelector(".nodePool")
+      this.state.currentListSize,
+      this.shadowRoot.querySelector('.nodePool'),
     );
-  };
+  }
 
   private updatePadding(scrollingDownwards = true): void {
-    const firstItem = this.nodePoolContainerDom.children[0] as HTMLElement;
-    const paddingOffset = getOuterHeight(firstItem) * this.paddingIncrement;
+    const paddingOffset =
+      this.state.dimensions.singleItem.outerH * this.paddingIncrement;
 
     if (scrollingDownwards) {
       this.state.paddingTop += paddingOffset;
@@ -244,15 +390,15 @@ export class RecycleView extends LitElement {
         this.state.paddingTop === 0 ? 0 : this.state.paddingTop - paddingOffset;
       this.state.paddingBottom += paddingOffset;
     }
-    this.style.setProperty("--paddingTop", `${this.state.paddingTop}px`);
-    this.style.setProperty("--paddingBottom", `${this.state.paddingBottom}px`);
+    this.style.setProperty('--paddingTop', `${this.state.paddingTop}px`);
+    this.style.setProperty('--paddingBottom', `${this.state.paddingBottom}px`);
   }
 
-  private resetPadding() {
+  private resetPadding(): void {
     this.state.paddingBottom = 0;
     this.state.paddingTop = 0;
-    this.style.setProperty("--paddingBottom", "0px");
-    this.style.setProperty("--paddingTop", "0px");
+    this.style.setProperty('--paddingBottom', '0px');
+    this.style.setProperty('--paddingTop', '0px');
   }
 
   private calculateNewFirstIndex(scrollingDownwards = true): number {
@@ -281,18 +427,15 @@ export class RecycleView extends LitElement {
 
     const currentY = entry.boundingClientRect.top;
     const isIntersecting = entry.isIntersecting;
-    // console.log("!!!!!TOP SENTINEL!!!!!!", isIntersecting, this.state);
+    console.log('!!!!!TOP SENTINEL!!!!!!', isIntersecting, this.state);
     const shouldChangePage =
       currentY > this.state.topSentinelPreviousY &&
       isIntersecting &&
       this.state.currentFirstIndex !== 0;
 
-    // check if user is actually Scrolling up
+    // @NOTE: if the user has scrolled up enough, trigger a new page event:
     if (shouldChangePage) {
-      const newFirstIndex = this.calculateNewFirstIndex(false);
-      this.updatePadding(false);
-      this.domRecycleOperations(newFirstIndex);
-      this.state.currentFirstIndex = newFirstIndex;
+      this.changePaging(false);
     }
 
     // Store current offset, for the next time:
@@ -306,7 +449,7 @@ export class RecycleView extends LitElement {
     if (
       this.state.atListEnd ||
       this.state.currentFirstIndex ===
-        this.currentCollectionSize - this.listSize
+        this.currentCollectionSize - this.state.currentListSize
     ) {
       this.state.bottomSentinelPreviousY = currentY;
       return false;
@@ -315,15 +458,11 @@ export class RecycleView extends LitElement {
     const isIntersecting = entry.isIntersecting;
     const shouldChangePage =
       currentY < this.state.bottomSentinelPreviousY && isIntersecting;
-    // console.log("!!!!!BOTTOM SENTINEL!!!!!!", isIntersecting, this.state);
+    // console.log("!!!!!BOTTOM SENTINEL!!!!!!", shouldChangePage);
 
-    // check if user is actually Scrolling down
+    // @NOTE: if the user has scrolled down enough, trigger a new page event:
     if (shouldChangePage) {
-      const newFirstIndex = this.calculateNewFirstIndex(true);
-      this.updatePadding(true);
-      this.domRecycleOperations(newFirstIndex);
-      this.state.currentFirstIndex = newFirstIndex;
-      this.checkToGetMoreItems();
+      this.changePaging(true);
     }
 
     // Store current offset, for the next time:
@@ -331,39 +470,66 @@ export class RecycleView extends LitElement {
     return true;
   }
 
-  private initEventListeners(): void {
+  private changePaging(downwards: boolean) {
+    const newFirstIndex = this.calculateNewFirstIndex(downwards);
+    this.updatePadding(downwards);
+    this.domRecycleOperations(newFirstIndex);
+    this.state.currentFirstIndex = newFirstIndex;
+    if (downwards) this.checkToGetMoreItems();
+  }
+
+  private initScrollAndIoListeners(): void {
     const handleIntersection = (entries) => {
       entries.forEach((entry) => {
         const { target } = entry;
-        if (target.classList.contains("topSentinel")) {
+        if (target.classList.contains('topSentinel')) {
           this.topSentinelCallback(entry);
-        } else if (target.classList.contains("bottomSentinel")) {
+        } else if (target.classList.contains('bottomSentinel')) {
           this.bottomSentinelCallback(entry);
         }
       });
     };
 
     this.intersectionObserver = new IntersectionObserver(handleIntersection, {
-      root: this,
+      root: this.overflowAreaDom,
     });
     this.intersectionObserver.observe(this.topSentinelDom);
     this.intersectionObserver.observe(this.bottomSentinelDom);
 
     // @NOTE: Add some OVER-SCROLL PROTECTION:
-    const handleScroll = debounce((e) => {
+    const handleScroll = throttle((e: UIEvent) => {
+      // @NOTE: atm we dont care if the user is scrolling down...
+      if (this.scrollTop > this.state.lastScrollPosition) {
+        this.state.lastScrollPosition = this.scrollTop;
+        return false;
+      }
+
+      this.state.lastScrollPosition = this.scrollTop;
       const rect = this.topSentinelDom.getBoundingClientRect();
-      console.log('!!!!!!', rect.top, this.state.paddingTop, rect.top > 1 && this.state.paddingTop !== 0)
-      if (rect.top > 1 && this.state.paddingTop !== 0) {
-        console.log("!!!!!!!!!! RESCUE !!!!!!!!!!");
+      console.log(
+        '!!!!!! CHECK TO RESCUE !!!!!!!',
+        rect.top,
+        this.state.paddingTop,
+        this.state.currentFirstIndex,
+        rect.top > this.state.dimensions.container.h &&
+          this.state.paddingTop !== 0,
+      );
+      if (
+        rect.top > this.state.dimensions.container.h &&
+        this.state.paddingTop !== 0
+      ) {
+        console.log('$$$$$$$$$$$$$ DOING RESCUE $$$$$$$$$$$$$$$');
         this.state.currentFirstIndex = 0;
         this.resetPadding();
         this.domRecycleOperations(0);
         this.scrollTop = 0;
       }
-    }, 100);
+    }, 1000);
 
     // @NOTE: bind scroll event, to watch for extreme scrolls:
-    this.addEventListener("scroll", handleScroll, { passive: true });
+    this.overflowAreaDom.addEventListener('scroll', handleScroll, {
+      passive: true,
+    });
   }
 
   protected render(): TemplateResult {
@@ -372,13 +538,16 @@ export class RecycleView extends LitElement {
         ${this.itemStyles}
       </style>
       <div id="itemTemplate">${this.itemTemplate}</div>
-      <div class="list">
-        <div class="sentinel topSentinel"></div>
-        <div class="nodePool"></div>
-        <div class="sentinel bottomSentinel"></div>
+      <div class="overflowArea">
+        <div class="list">
+          <div class="sentinel topSentinel"></div>
+          <div class="nodePool"></div>
+          <div class="sentinel bottomSentinel"></div>
+        </div>
       </div>
+      <div class="blockScrollBar"></div>
     `;
   }
 }
 
-customElements.define("gu-recycle-view", RecycleView);
+customElements.define('gu-recycle-view', RecycleView);

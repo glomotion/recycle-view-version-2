@@ -1,4 +1,8 @@
-import { css } from "lit-element";
+import { css } from 'lit-element';
+
+import { asCssProp } from './style.helpers';
+
+const scrollBarWidth = '10px';
 
 export const styles = css`
   :host,
@@ -8,32 +12,45 @@ export const styles = css`
     box-sizing: border-box;
   }
 
-  :host::-webkit-scrollbar {
-    width: 0px;
-    height: 0px;
-  }
-
   :host {
     width: 100%;
     height: 100%;
     position: relative;
+  }
+
+  .overflowArea {
+    height: 100%;
     overflow: auto;
-    scrollbar-width: none;
+    scrollbar-width: thin;
+  }
+
+  .overflowArea::-webkit-scrollbar {
+    width: ${asCssProp(scrollBarWidth)};
+    height: ${asCssProp(scrollBarWidth)};
+  }
+
+  .blockScrollBar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: ${asCssProp(scrollBarWidth)};
+    height: 100%;
   }
 
   #itemTemplate {
     opacity: 0;
+    z-index: -1;
     position: absolute;
-    top: 0; left: 0;
-    width: 0px;
-    height: 0px;
+    bottom: 0;
+    right: 0;
   }
 
   .list {
-    padding-top: var(--paddingTop);
-    padding-bottom: var(--paddingBottom);
-    margin: 0;
+    margin-top: var(--paddingTop);
+    margin-bottom: var(--paddingBottom);
+    min-height: var(--minHeight);
     padding-left: 10px;
+    position: relative;
   }
 
   .nodePool {
@@ -43,15 +60,25 @@ export const styles = css`
 
   .sentinel {
     width: 100%;
-    height: 1px;
+    height: 100px;
+    position: absolute;
+    left: 0;
+  }
+
+  .topSentinel {
+    top: 0;
+    height: 10px;
+    background: gold;
+  }
+
+  .bottomSentinel {
+    bottom: 0;
+    background: red;
   }
 
   .list__item {
-    width: calc(33.33% - 10px);
-    background-color: #f5f5f5;
-    color: grey;
+    width: calc((100% / var(--columnCount)) - 10px);
     margin: 0 10px 10px 0;
-    padding: 10px;
     text-align: center;
   }
 
